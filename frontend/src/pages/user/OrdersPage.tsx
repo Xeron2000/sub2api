@@ -4,7 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { useQuery } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useNavigate } from "react-router-dom"
@@ -33,8 +33,8 @@ export function OrdersPage() {
   return (
     <Page>
       <PageHeader title="My Orders" description="Polling /payment/orders — backend-authoritative status." />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
-      <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No orders yet — purchase a subscription to see orders." /></Section>
+      <Toolbar><SearchInput value={search} onChange={setSearch} placeholder="Search" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
+      <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No orders yet" emptyDescription="Purchase a subscription to see orders." emptyActionLabel="Go to Purchase" emptyAction={() => window.location.href="/purchase"} /></Section>
     </Page>
   )
 }

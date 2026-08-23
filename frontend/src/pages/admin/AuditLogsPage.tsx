@@ -4,7 +4,7 @@ import { Page, PageHeader, Toolbar, Section } from "@/components/shared/Page"
 import { DataTable } from "@/components/shared/DataTable"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
 import { t } from "@/i18n"
 
@@ -28,8 +28,8 @@ export function AuditLogsPage() {
   return (
     <Page>
       <PageHeader title={t("admin.audit.title") as string || "AuditLogs"} description="AuditLogs management." actions={<Button>Create</Button>} />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
-      <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No data" /></Section>
+      <Toolbar><SearchInput value={search} onChange={setSearch} placeholder="Search" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
+      <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No data" emptyDescription="No records found. Try adjusting search or create a new entry." /></Section>
     </Page>
   )
 }

@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useEffect } from "react"
 import { Page, PageHeader, Section } from "@/components/shared/Page"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +13,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { LoadingState, ErrorState } from "@/components/shared/EmptyState"
+import { Loader2 } from "lucide-react"
 
 const schema = z.object({
   site_name: z.string().min(1),
@@ -24,6 +26,18 @@ const schema = z.object({
   risk_control_enabled: z.boolean().optional(),
 })
 type V = z.infer<typeof schema>
+
+function SwitchRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2">
+      <div className="space-y-0.5">
+        <Label>{label}</Label>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  )
+}
 
 export function SettingsPage() {
   const qc = useQueryClient()
@@ -43,7 +57,8 @@ export function SettingsPage() {
   }, [data, form])
   const mut = useMutation({
     mutationFn: async (v: V) => (await httpClient.put("/admin/settings", v)).data,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-settings"] }); alert("Settings saved") },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-settings"] }); toast.success("Settings saved") },
+    onError: (e) => toast.error((e as Error).message),
   })
   if (isLoading) return <LoadingState />
   if (error) return <ErrorState message={(error as Error).message} onRetry={() => refetch()} />
@@ -60,12 +75,12 @@ export function SettingsPage() {
         </TabsList>
         <TabsContent value="general">
           <Section title="General">
-            <Card className="rounded-none"><CardHeader><CardTitle className="text-sm">Site</CardTitle></CardHeader>
+            <Card className="rounded-none"><CardHeader><CardTitle className="text-sm">Site Branding</CardTitle></CardHeader>
               <CardContent>
                 <form onSubmit={form.handleSubmit((v) => mut.mutate(v))} className="max-w-md space-y-4">
-                  <div className="space-y-1"><Label>Site name</Label><Input {...form.register("site_name")} /></div>
-                  <div className="space-y-1"><Label>Site URL</Label><Input {...form.register("site_url")} /></div>
-                  <Button type="submit" disabled={mut.isPending}>Save changes</Button>
+                  <div className="space-y-1"><Label>Site name</Label><Input {...form.register("site_name")} /><p className="text-xs text-muted-foreground">Displayed in header and login branding.</p></div>
+                  <div className="space-y-1"><Label>Site URL</Label><Input {...form.register("site_url")} /><p className="text-xs text-muted-foreground">Used for callbacks and emails.</p></div>
+                  <Button type="submit" disabled={mut.isPending}>{mut.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : "Save changes"}</Button>
                 </form>
               </CardContent>
             </Card>
@@ -73,32 +88,30 @@ export function SettingsPage() {
         </TabsContent>
         <TabsContent value="auth">
           <Section title="Authentication">
-            <Card className="rounded-none"><CardContent className="p-4 space-y-4">
-              <div className="flex items-center justify-between"><Label>TOTP Enabled</Label><Switch checked={!!form.watch("totp_enabled")} onCheckedChange={(c) => form.setValue("totp_enabled", c)} /></div>
-              <div className="flex items-center justify-between"><Label>Passkey Enabled</Label><Switch checked={!!form.watch("passkey_enabled")} onCheckedChange={(c) => form.setValue("passkey_enabled", c)} /></div>
-              <div className="flex items-center justify-between"><Label>Registration Enabled</Label><Switch checked={!!form.watch("registration_enabled")} onCheckedChange={(c) => form.setValue("registration_enabled", c)} /></div>
-              <Button onClick={form.handleSubmit((v) => mut.mutate(v))}>Save Auth Settings</Button>
+            <Card className="rounded-none"><CardContent className="p-4 space-y-1">
+              <SwitchRow label="TOTP Two-Factor" description="Require authenticator app for sensitive operations." checked={!!form.watch("totp_enabled")} onChange={(c) => form.setValue("totp_enabled", c)} />
+              <SwitchRow label="Passkey (WebAuthn)" description="Allow passwordless login via platform authenticators." checked={!!form.watch("passkey_enabled")} onChange={(c) => form.setValue("passkey_enabled", c)} />
+              <SwitchRow label="Registration Enabled" description="Allow new users to self-register. Disable for invite-only." checked={!!form.watch("registration_enabled")} onChange={(c) => form.setValue("registration_enabled", c)} />
+              <Button onClick={form.handleSubmit((v) => mut.mutate(v))} disabled={mut.isPending} className="mt-2">{mut.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : "Save Auth Settings"}</Button>
             </CardContent></Card>
           </Section>
         </TabsContent>
         <TabsContent value="payments">
-          <Section title="Payments"><Card className="rounded-none"><CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between"><Label>Payments Enabled</Label><Switch checked={!!form.watch("payment_enabled")} onCheckedChange={(c) => form.setValue("payment_enabled", c)} /></div>
-            <p className="text-xs text-muted-foreground">Stripe / Airwallex / Alipay / WeChat configured via /admin/payment and /admin/settings.</p>
-            <Button onClick={form.handleSubmit((v) => mut.mutate(v))}>Save Payment Settings</Button>
+          <Section title="Payments"><Card className="rounded-none"><CardContent className="p-4 space-y-1">
+            <SwitchRow label="Payments Enabled" description="Enable Stripe / Airwallex / Alipay / WeChat checkout flows." checked={!!form.watch("payment_enabled")} onChange={(c) => form.setValue("payment_enabled", c)} />
+            <Button onClick={form.handleSubmit((v) => mut.mutate(v))} disabled={mut.isPending} className="mt-2">{mut.isPending ? "Saving..." : "Save Payment Settings"}</Button>
           </CardContent></Card></Section>
         </TabsContent>
         <TabsContent value="security">
-          <Section title="Security"><Card className="rounded-none"><CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between"><Label>Risk Control</Label><Switch checked={!!form.watch("risk_control_enabled")} onCheckedChange={(c) => form.setValue("risk_control_enabled", c)} /></div>
-            <p className="text-xs text-muted-foreground">Toggles prompt audit and content filtering. Detailed rules at /admin/risk-control/config.</p>
-            <Button onClick={form.handleSubmit((v) => mut.mutate(v))}>Save Security</Button>
+          <Section title="Security"><Card className="rounded-none"><CardContent className="p-4 space-y-1">
+            <SwitchRow label="Risk Control" description="Enable content moderation and prompt filtering pipeline." checked={!!form.watch("risk_control_enabled")} onChange={(c) => form.setValue("risk_control_enabled", c)} />
+            <Button onClick={form.handleSubmit((v) => mut.mutate(v))} disabled={mut.isPending} className="mt-2">{mut.isPending ? "Saving..." : "Save Security"}</Button>
           </CardContent></Card></Section>
         </TabsContent>
         <TabsContent value="features">
-          <Section title="Features"><Card className="rounded-none"><CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between"><Label>Affiliate Enabled</Label><Switch checked={!!form.watch("affiliate_enabled")} onCheckedChange={(c) => form.setValue("affiliate_enabled", c)} /></div>
-            <Button onClick={form.handleSubmit((v) => mut.mutate(v))}>Save Features</Button>
+          <Section title="Features"><Card className="rounded-none"><CardContent className="p-4 space-y-1">
+            <SwitchRow label="Affiliate Program" description="Enable invite rebates and transfer to balance." checked={!!form.watch("affiliate_enabled")} onChange={(c) => form.setValue("affiliate_enabled", c)} />
+            <Button onClick={form.handleSubmit((v) => mut.mutate(v))} disabled={mut.isPending} className="mt-2">{mut.isPending ? "Saving..." : "Save Features"}</Button>
           </CardContent></Card></Section>
         </TabsContent>
       </Tabs>

@@ -1,32 +1,38 @@
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { httpClient } from "@/api/client/http-client"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 
 const schema = z.object({
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(6, "Password must be at least 6 characters."),
+  remember: z.boolean().optional(),
 })
 
 type Values = z.infer<typeof schema>
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } })
+  const [show, setShow] = useState(false)
+  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: localStorage.getItem("remember_email") ?? "", password: "", remember: !!localStorage.getItem("remember_email") } })
 
   const onSubmit = async (values: Values) => {
     try {
-      const res = await httpClient.post("/auth/login", values)
+      const res = await httpClient.post("/auth/login", { email: values.email, password: values.password })
       const data = res.data as { token?: string; access_token?: string; refresh_token?: string; user?: unknown }
       const token = data.token || data.access_token
       if (token) localStorage.setItem("auth_token", token)
       if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token)
       if (data.user) localStorage.setItem("auth_user", JSON.stringify(data.user))
+      if (values.remember) localStorage.setItem("remember_email", values.email)
+      else localStorage.removeItem("remember_email")
       navigate("/dashboard")
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Login failed"
@@ -50,12 +56,22 @@ export function LoginPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...form.register("password")} />
+              <div className="relative">
+                <Input id="password" type={show ? "text" : "password"} {...form.register("password")} className="pr-10" />
+                <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={show ? "Hide password" : "Show password"}>
+                  {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {form.formState.errors.password && <p className="text-destructive text-xs">{form.formState.errors.password.message}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="remember" {...form.register("remember")} className="h-4 w-4 rounded border-input" />
+              <Label htmlFor="remember" className="text-sm font-normal">Remember me</Label>
+              <Link to="/forgot-password" className="ml-auto text-sm text-primary hover:underline">Forgot?</Link>
             </div>
             {form.formState.errors.root && <p className="text-destructive text-sm">{form.formState.errors.root.message}</p>}
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
+              {form.formState.isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : "Sign in"}
             </Button>
           </form>
         </CardContent>

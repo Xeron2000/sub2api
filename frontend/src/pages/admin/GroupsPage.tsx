@@ -6,6 +6,7 @@ import { DataTable } from "@/components/shared/DataTable"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Label } from "@/components/ui/label"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
 import { t } from "@/i18n"
@@ -55,7 +56,7 @@ export function GroupsPage() {
   return (
     <Page>
       <PageHeader title={t("admin.groups.title") as string || "Groups"} description="Groups management." actions={<Button onClick={() => { setEditing(null); form.reset({ name: "", description: "" }); setOpen(true) }}>Create group</Button>} />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
+      <Toolbar><SearchInput value={search} onChange={setSearch} placeholder="Search" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
       <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No groups" /></Section>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent><SheetHeader><SheetTitle>{editing ? "Edit group" : "Create group"}</SheetTitle></SheetHeader>

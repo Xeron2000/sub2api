@@ -8,6 +8,7 @@ import { DataTable } from "@/components/shared/DataTable"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
 import { t } from "@/i18n"
 import { z } from "zod"
@@ -97,7 +98,7 @@ export function ChannelsPage() {
         }
       />
       <Toolbar>
-        <Input placeholder="Filter channels..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+        <SearchInput value={search} onChange={setSearch} placeholder="Search" />
         <Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button>
       </Toolbar>
       <DataTable data={data ?? []} columns={columns} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No channels" />

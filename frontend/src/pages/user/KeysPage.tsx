@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
@@ -6,6 +7,7 @@ import { DataTable } from "@/components/shared/DataTable"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Label } from "@/components/ui/label"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
 import { t } from "@/i18n"
@@ -40,9 +42,9 @@ export function KeysPage() {
         const r = row.original
         return (
           <div className="flex gap-1">
-            <Button size="sm" variant="ghost" onClick={async () => { const res = await httpClient.get("/keys/" + r.id); const d = (res.data as { key?: string })?.key; if (d) { await navigator.clipboard.writeText(d); alert("Key copied") } else alert(JSON.stringify(res.data)) }}>Copy</Button>
+            <Button size="sm" variant="ghost" onClick={async () => { const res = await httpClient.get("/keys/" + r.id); const d = (res.data as { key?: string })?.key; if (d) { await navigator.clipboard.writeText(d); toast.success("API Key 已复制到剪贴板") } else toast.info(JSON.stringify(res.data)) }}>Copy</Button>
             <Button size="sm" variant="ghost" onClick={() => { setEditing(r); form.reset({ name: r.name, group: r.group ?? "", allowed_ips: r.allowed_ips ?? "" }); setOpen(true) }}>Edit</Button>
-            <Button size="sm" variant="ghost" onClick={() => setDeleting(r)}>Delete</Button>
+            <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeleting(r)}>Delete</Button>
           </div>
         )
       },
@@ -80,8 +82,8 @@ export function KeysPage() {
   return (
     <Page>
       <PageHeader title={t("keys.title") as string || "API Keys"} description="Manage keys, groups, IP whitelist and copy." actions={<Button onClick={() => { setEditing(null); form.reset({ name: "", group: "", allowed_ips: "" }); setOpen(true) }}>Create key</Button>} />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
-      <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No keys" /></Section>
+      <Toolbar><SearchInput value={search} onChange={setSearch} placeholder="Search" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
+      <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No keys" emptyDescription="Create your first API key to start calling models." emptyActionLabel="Create key" emptyAction={() => { setEditing(null); form.reset({ name: "", group: "", allowed_ips: "" }); setOpen(true) }} /></Section>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent>
           <SheetHeader><SheetTitle>{editing ? "Edit Key" : "Create Key"}</SheetTitle></SheetHeader>
@@ -106,7 +108,7 @@ export function KeysPage() {
           <p className="text-sm text-muted-foreground">This is the only time the full key is shown. Copy it now.</p>
           <div className="bg-muted p-3 rounded text-sm font-mono break-all select-all">{createdKey}</div>
           <DialogFooter>
-            <Button variant="outline" onClick={async () => { if (createdKey) await navigator.clipboard.writeText(createdKey); alert("Copied to clipboard") }}>Copy</Button>
+            <Button variant="outline" onClick={async () => { if (createdKey) await navigator.clipboard.writeText(createdKey); toast.success("已复制到剪贴板") }}>Copy</Button>
             <Button onClick={() => setCreatedKey(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>

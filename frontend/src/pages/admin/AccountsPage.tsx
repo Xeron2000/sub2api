@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
@@ -6,6 +7,7 @@ import { DataTable } from "@/components/shared/DataTable"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Label } from "@/components/ui/label"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
 import { t } from "@/i18n"
@@ -40,7 +42,7 @@ export function AccountsPage() {
   const createMut = useMutation({ mutationFn: async (v: V) => (await httpClient.post("/admin/accounts", { name: v.name, platform: v.platform, credentials: { api_key: v.api_key, base_url: v.base_url }, group_ids: [] })).data, onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-accounts"] }); setOpen(false); form.reset() } })
   const updateMut = useMutation({ mutationFn: async (v: V) => (await httpClient.put(`/admin/accounts/${editing!.id}`, { name: v.name, platform: v.platform, credentials: { api_key: v.api_key, base_url: v.base_url } })).data, onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-accounts"] }); setOpen(false); setEditing(null); form.reset() } })
   const deleteMut = useMutation({ mutationFn: async () => (await httpClient.delete(`/admin/accounts/${deleting!.id}`)).data, onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-accounts"] }); setDeleting(null) } })
-  const testMut = useMutation({ mutationFn: async (id: number) => (await httpClient.post(`/admin/accounts/${id}/test`)).data, onSuccess: (d) => alert(JSON.stringify(d)) })
+  const testMut = useMutation({ mutationFn: async (id: number) => (await httpClient.post(`/admin/accounts/${id}/test`)).data, onSuccess: (d) => toast.info(JSON.stringify(d)) })
 
   const cols: ColumnDef<Row>[] = [
     { accessorKey: "id", header: "ID" },
@@ -61,7 +63,7 @@ export function AccountsPage() {
   return (
     <Page>
       <PageHeader title={t("admin.accounts.title") as string || "Accounts"} description="Upstream accounts with credentials and health check." actions={<Button onClick={() => { setEditing(null); form.reset({ name: "", platform: "openai", api_key: "", base_url: "" }); setOpen(true) }}>Create account</Button>} />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
+      <Toolbar><SearchInput value={search} onChange={setSearch} placeholder="Search" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
       <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No accounts" /></Section>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent><SheetHeader><SheetTitle>{editing ? "Edit account" : "Create account"}</SheetTitle></SheetHeader>

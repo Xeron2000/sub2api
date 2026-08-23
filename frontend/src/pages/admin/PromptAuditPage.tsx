@@ -4,7 +4,7 @@ import { Page, PageHeader, Section, Toolbar } from "@/components/shared/Page"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
 import { DataTable } from "@/components/shared/DataTable"
 import type { ColumnDef } from "@tanstack/react-table"
@@ -43,7 +43,7 @@ export function PromptAuditPage() {
     <Page>
       <PageHeader title="Prompt Audit" description="Policy events and manual review — connected to /admin/prompt-audit/*." />
       <Card className="rounded-none"><CardContent className="p-4 text-xs"><pre className="bg-muted p-2 overflow-auto max-h-32">{JSON.stringify(configQ.data ?? {}, null, 2)}</pre></CardContent></Card>
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
+      <Toolbar><SearchInput value={search} onChange={setSearch} placeholder="Search" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
       <Section><DataTable data={data ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No audit records" /></Section>
     </Page>
   )

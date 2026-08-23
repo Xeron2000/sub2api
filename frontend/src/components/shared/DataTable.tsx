@@ -20,6 +20,8 @@ type Props<T> = {
   onRetry?: () => void
   emptyTitle?: string
   emptyDescription?: string
+  emptyActionLabel?: string
+  emptyAction?: () => void
   pagination?: { pageIndex: number; pageSize: number }
   sorting?: SortingState
   onPaginationChange?: (updater: { pageIndex: number; pageSize: number } | ((old: { pageIndex: number; pageSize: number }) => { pageIndex: number; pageSize: number })) => void
@@ -34,6 +36,8 @@ export function DataTable<T>({
   onRetry,
   emptyTitle = "No data",
   emptyDescription,
+  emptyActionLabel,
+  emptyAction,
   pagination,
   sorting,
   onPaginationChange,
@@ -60,7 +64,7 @@ export function DataTable<T>({
 
   if (loading) return <LoadingState />
   if (error) return <ErrorState message={error} onRetry={onRetry} />
-  if (data.length === 0) return <EmptyState title={emptyTitle} description={emptyDescription} />
+  if (data.length === 0) return <EmptyState title={emptyTitle} description={emptyDescription} actionLabel={emptyActionLabel} onAction={emptyAction} />
 
   return (
     <div className="space-y-3">
@@ -86,15 +90,15 @@ export function DataTable<T>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="text-muted-foreground text-xs">
-          {table.getFilteredRowModel().rows.length} row(s) · page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+      {pagination && (
+        <div className="flex items-center justify-between">
+          <div className="text-muted-foreground text-xs">Page {pagination.pageIndex + 1}</div>
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" disabled={pagination.pageIndex === 0} onClick={() => handlePaginationChange({ ...pagination, pageIndex: pagination.pageIndex - 1 })}>Prev</Button>
+            <Button variant="outline" size="sm" disabled={data.length < pagination.pageSize} onClick={() => handlePaginationChange({ ...pagination, pageIndex: pagination.pageIndex + 1 })}>Next</Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Previous</Button>
-          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next</Button>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useEffect } from "react"
 import { Page, PageHeader, Section } from "@/components/shared/Page"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +30,7 @@ export function RiskControlPage() {
   }, [data, form])
   const mut = useMutation({
     mutationFn: async (v: V) => (await httpClient.put("/admin/risk-control/config", { ...v, blocked_keywords: v.blocked_keywords ? v.blocked_keywords.split(",").map(s=>s.trim()).filter(Boolean) : [] })).data,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["risk-config"] }); alert("Risk config saved") },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["risk-config"] }); toast.success("Risk config saved") },
   })
   if (isLoading) return <LoadingState />
   if (error) return <ErrorState message={(error as Error).message} onRetry={() => refetch()} />
@@ -45,7 +46,7 @@ export function RiskControlPage() {
               <div className="space-y-1"><Label>Blocked Keywords (comma separated)</Label><Textarea {...form.register("blocked_keywords")} placeholder="politics, spam, ..." rows={3} /></div>
               <div className="space-y-1"><Label>Max Requests / Minute</Label><Input type="number" {...form.register("max_requests_per_minute", { valueAsNumber: true })} /></div>
               <Button type="submit" disabled={mut.isPending}>{mut.isPending ? "Saving..." : "Save Risk Config"}</Button>
-              <Button type="button" variant="outline" className="ml-2" onClick={async () => { const r = await httpClient.post("/admin/risk-control/test", { prompt: "test" }); alert(JSON.stringify(r.data)) }}>Test Prompt</Button>
+              <Button type="button" variant="outline" className="ml-2" onClick={async () => { const r = await httpClient.post("/admin/risk-control/test", { prompt: "test" }); toast.info(JSON.stringify(r.data)) }}>Test Prompt</Button>
             </form>
           </CardContent>
         </Card>

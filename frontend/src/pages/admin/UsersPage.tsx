@@ -7,6 +7,7 @@ import { Page, PageHeader, Toolbar } from "@/components/shared/Page"
 import { DataTable } from "@/components/shared/DataTable"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -114,10 +115,10 @@ export function UsersPage() {
     <Page>
       <PageHeader title={t("admin.users.title")} description={t("admin.users.description")} actions={<Button onClick={() => { setEditing(null); setSheetOpen(true) }}>Create user</Button>} />
       <Toolbar>
-        <Input placeholder="Search email..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+        <SearchInput value={search} onChange={setSearch} placeholder="Search" />
         <Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button>
       </Toolbar>
-      <DataTable data={data ?? []} columns={tableColumns} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No users yet" />
+      <DataTable data={data ?? []} columns={tableColumns} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No users yet" emptyDescription="Invite your first user." emptyActionLabel="Create user" emptyAction={() => { setEditing(null); setSheetOpen(true) }} />
       <UserSheet open={sheetOpen} onOpenChange={setSheetOpen} initial={editing ? { email: editing.email, role: editing.role as "user"|"admin" } : undefined} onSubmit={handleSubmit} />
       <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <DialogContent>

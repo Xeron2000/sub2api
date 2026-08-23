@@ -6,6 +6,7 @@ import { DataTable } from "@/components/shared/DataTable"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTableUrlState } from "@/hooks/useTableUrlState"
@@ -58,7 +59,7 @@ export function UsagePage() {
       <PageHeader title="Usage" description="Multi-dimensional filtering with error drawer." />
       <Toolbar>
         <div className="flex flex-wrap gap-2 items-end">
-          <div className="space-y-1"><Label className="text-xs">Search</Label><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-[180px]" /></div>
+          <div className="space-y-1"><Label className="text-xs">Search</Label><SearchInput value={search} onChange={setSearch} placeholder="Search" /></div>
           <div className="space-y-1"><Label className="text-xs">Model</Label>
             <Select value={model} onValueChange={setModel}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All models</SelectItem><SelectItem value="gpt-4o">gpt-4o</SelectItem><SelectItem value="claude-3">claude-3</SelectItem></SelectContent></Select>
           </div>
