@@ -44,4 +44,10 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  {
+    files: ['src/pages/auth/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ])
