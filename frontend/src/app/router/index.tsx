@@ -96,7 +96,7 @@ export const router = createBrowserRouter([
   { path: "/usage", element: <Protected><AppShell><UserUsagePage /></AppShell></Protected> },
   { path: "/redeem", element: <Protected><AppShell><UserRedeemPage /></AppShell></Protected> },
   { path: "/affiliate", element: <Protected><AppShell><AffiliatePage /></AppShell></Protected> },
-  { path: "/available-channels", element: <Protected><AppShell><AvailableChannelsPage /></AppShell></Protected> },
+  { path: "/channels/available", element: <Protected><AppShell><AvailableChannelsPage /></AppShell></Protected> },
   { path: "/profile", element: <Protected><AppShell><ProfilePage /></AppShell></Protected> },
   { path: "/subscriptions", element: <Protected><AppShell><UserSubscriptionsPage /></AppShell></Protected> },
   { path: "/purchase", element: <Protected><AppShell><PurchasePage /></AppShell></Protected> },
@@ -123,12 +123,17 @@ export const router = createBrowserRouter([
   { path: "/admin/accounts", element: <Protected admin><AppShell><AccountsPage /></AppShell></Protected> },
   { path: "/admin/announcements", element: <Protected admin><AppShell><AnnouncementsPage /></AppShell></Protected> },
   { path: "/admin/proxies", element: <Protected admin><AppShell><ProxiesPage /></AppShell></Protected> },
-  { path: "/admin/redeem", element: <Protected admin><AppShell><AdminRedeemPage /></AppShell></Protected> },
+  { path: "/admin/redeem-codes", element: <Protected admin><AppShell><AdminRedeemPage /></AppShell></Protected> },
+  { path: "/admin/redeem", element: <Navigate to="/admin/redeem-codes" replace /> },
   { path: "/admin/promo-codes", element: <Protected admin><AppShell><PromoCodesPage /></AppShell></Protected> },
   { path: "/admin/settings", element: <Protected admin><AppShell><SettingsPage /></AppShell></Protected> },
   { path: "/admin/risk-control", element: <Protected admin><AppShell><RiskControlPage /></AppShell></Protected> },
   { path: "/admin/prompt-audit", element: <Protected admin><AppShell><PromptAuditPage /></AppShell></Protected> },
   { path: "/admin/usage", element: <Protected admin><AppShell><AdminUsagePage /></AppShell></Protected> },
+
+  // legacy redirects (GOAL-BUGFIX-E2E backwards compat)
+  { path: "/available-channels", element: <Navigate to="/channels/available" replace /> },
+  { path: "/monitor-v2", element: <Navigate to="/monitor" replace /> },
 
   { path: "*", element: <NotFound /> },
 ])

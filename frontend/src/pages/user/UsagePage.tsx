@@ -32,7 +32,7 @@ export function UsagePage() {
       id: "error",
       header: "Error",
       cell: ({ row }) => row.original.error ? <Button variant="ghost" size="sm" onClick={async () => {
-        const res = await httpClient.get("/user/usage/errors/" + row.original.id)
+        const res = await httpClient.get("/usage/errors/" + row.original.id)
         setSelectedError(res.data as ErrorRow)
       }}>View</Button> : <span className="text-muted-foreground text-xs">—</span>,
     },
@@ -40,7 +40,7 @@ export function UsagePage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["usage", search, pagination.pageIndex, sorting, model, channel, dateFrom, dateTo],
     queryFn: async () => {
-      const res = await httpClient.get<{ items: Row[] }>("/user/usage", {
+      const res = await httpClient.get<{ items: Row[] }>("/usage", {
         params: {
           search, model: model !== "all" ? model : undefined, channel: channel !== "all" ? channel : undefined,
           start: dateFrom || undefined, end: dateTo || undefined,

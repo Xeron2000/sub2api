@@ -24,19 +24,19 @@ export function RedeemPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["redeem-history", pagination.pageIndex],
     queryFn: async () => {
-      const res = await httpClient.get<{ items: Row[] }>("/user/redeem/history", { params: { page: pagination.pageIndex+1, page_size: pagination.pageSize } })
+      const res = await httpClient.get<{ items: Row[] }>("/redeem/history", { params: { page: pagination.pageIndex+1, page_size: pagination.pageSize } })
       const d = res.data as { items?: Row[] } | Row[]
       return Array.isArray(d) ? d : (d as { items?: Row[] }).items ?? []
     },
   })
   const mut = useMutation({
-    mutationFn: async (v: V) => (await httpClient.post("/user/redeem", v)).data,
+    mutationFn: async (v: V) => (await httpClient.post("/redeem", v)).data,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["redeem-history"] }); form.reset(); alert("Redeem successful"); },
     onError: (e) => alert((e as Error).message),
   })
   return (
     <Page>
-      <PageHeader title="Redeem" description="Enter redemption code to add quota — POST /user/redeem." />
+      <PageHeader title="Redeem" description="Enter redemption code to add quota — POST /redeem." />
       <Section>
         <Card className="rounded-none max-w-md"><CardHeader><CardTitle className="text-sm">Redeem Code</CardTitle></CardHeader>
           <CardContent>

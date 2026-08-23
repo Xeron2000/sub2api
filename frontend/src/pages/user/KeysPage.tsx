@@ -25,7 +25,8 @@ export function KeysPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
   const [deleting, setDeleting] = useState<Row | null>(null)
-  const form = useForm<V>({ resolver: zodResolver(schema), defaultValues: { name: "", group: "", allowed_ips: "" } })
+  const [createdKey, setCreatedKey] = useState<string | null>(null)
+  const form = useForm<V>({ resolver: zodResolver(schema as never), defaultValues: { name: "", group: "", allowed_ips: "" } })
   const cols: ColumnDef<Row>[] = [
     { accessorKey: "id", header: "ID" },
     { accessorKey: "name", header: "Name" },
@@ -39,7 +40,7 @@ export function KeysPage() {
         const r = row.original
         return (
           <div className="flex gap-1">
-            <Button size="sm" variant="ghost" onClick={async () => { const res = await httpClient.get("/user/api-keys/" + r.id); const d = (res.data as { key?: string })?.key; if (d) { await navigator.clipboard.writeText(d); alert("Key copied") } else alert(JSON.stringify(res.data)) }}>Copy</Button>
+            <Button size="sm" variant="ghost" onClick={async () => { const res = await httpClient.get("/keys/" + r.id); const d = (res.data as { key?: string })?.key; if (d) { await navigator.clipboard.writeText(d); alert("Key copied") } else alert(JSON.stringify(res.data)) }}>Copy</Button>
             <Button size="sm" variant="ghost" onClick={() => { setEditing(r); form.reset({ name: r.name, group: r.group ?? "", allowed_ips: r.allowed_ips ?? "" }); setOpen(true) }}>Edit</Button>
             <Button size="sm" variant="ghost" onClick={() => setDeleting(r)}>Delete</Button>
           </div>
@@ -50,20 +51,30 @@ export function KeysPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["keys", search, pagination.pageIndex, sorting],
     queryFn: async () => {
-      const res = await httpClient.get<{ items: Row[]; total?: number }>("/user/api-keys", { params: { search, page: pagination.pageIndex + 1, page_size: pagination.pageSize, sort: sorting.length ? `${sorting[0].id}.${sorting[0].desc ? "desc" : "asc"}` : undefined } })
+      const res = await httpClient.get<{ items: Row[]; total?: number }>("/keys", { params: { search, page: pagination.pageIndex + 1, page_size: pagination.pageSize, sort: sorting.length ? `${sorting[0].id}.${sorting[0].desc ? "desc" : "asc"}` : undefined } })
       const d = res.data as { items?: Row[] } | Row[]
       return Array.isArray(d) ? d : (d as { items?: Row[] }).items ?? []
     },
   })
   const mut = useMutation({
     mutationFn: async (v: V) => {
-      if (editing) return (await httpClient.put("/user/api-keys/" + editing.id, v)).data
-      return (await httpClient.post("/user/api-keys", v)).data
+      if (editing) return (await httpClient.put("/keys/" + editing.id, v)).data as { key?: string }
+      return (await httpClient.post("/keys", v)).data as { key?: string; id?: number }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["keys"] }); setOpen(false); setEditing(null); form.reset({ name: "", group: "", allowed_ips: "" }) },
+    onSuccess: (d) => {
+      qc.invalidateQueries({ queryKey: ["keys"] })
+      setOpen(false)
+      setEditing(null)
+      form.reset({ name: "", group: "", allowed_ips: "" })
+      const key = (d as { key?: string })?.key
+      if (key) {
+        setCreatedKey(key)
+        navigator.clipboard.writeText(key).catch(() => {})
+      }
+    },
   })
   const delMut = useMutation({
-    mutationFn: async () => (await httpClient.delete("/user/api-keys/" + deleting!.id)).data,
+    mutationFn: async () => (await httpClient.delete("/keys/" + deleting!.id)).data,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["keys"] }); setDeleting(null) },
   })
   return (
@@ -87,6 +98,17 @@ export function KeysPage() {
           <DialogHeader><DialogTitle>Delete key {deleting?.name}?</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
           <DialogFooter><Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button><Button variant="destructive" onClick={() => delMut.mutate()} disabled={delMut.isPending}>Delete</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!createdKey} onOpenChange={(o) => !o && setCreatedKey(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>API Key Created</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">This is the only time the full key is shown. Copy it now.</p>
+          <div className="bg-muted p-3 rounded text-sm font-mono break-all select-all">{createdKey}</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={async () => { if (createdKey) await navigator.clipboard.writeText(createdKey); alert("Copied to clipboard") }}>Copy</Button>
+            <Button onClick={() => setCreatedKey(null)}>Done</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Page>

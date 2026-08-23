@@ -20,7 +20,7 @@ export function RedeemPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-redeem", search, pagination.pageIndex, sorting],
     queryFn: async () => {
-      const res = await httpClient.get<{ items: Row[] }>("/admin/redeem", { params: { search, page: pagination.pageIndex+1, page_size: pagination.pageSize, sort: sorting[0] ? `${sorting[0].id}.${sorting[0].desc ? "desc" : "asc"}` : undefined } })
+      const res = await httpClient.get<{ items: Row[] }>("/admin/redeem-codes", { params: { search, page: pagination.pageIndex+1, page_size: pagination.pageSize, sort: sorting[0] ? `${sorting[0].id}.${sorting[0].desc ? "desc" : "asc"}` : undefined } })
       const d = res.data as { items?: Row[] } | Row[]
       return Array.isArray(d) ? d : (d as { items?: Row[] }).items ?? []
     },

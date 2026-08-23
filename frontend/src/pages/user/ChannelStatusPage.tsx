@@ -8,7 +8,7 @@ export function ChannelStatusPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["channel-status"],
     queryFn: async () => {
-      const res = await httpClient.get("/channel-monitors")
+      const res = await httpClient.get("/channels/available")
       return res.data
     },
   })

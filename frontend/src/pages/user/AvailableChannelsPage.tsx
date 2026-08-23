@@ -11,7 +11,7 @@ export function AvailableChannelsPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["available-channels"],
     queryFn: async () => {
-      const res = await httpClient.get<{ items: Channel[] } | Channel[]>("/user/available-channels/available")
+      const res = await httpClient.get<{ items: Channel[] } | Channel[]>("/channels/available")
       const d = res.data as { items?: Channel[] } | Channel[]
       return Array.isArray(d) ? d : (d as { items?: Channel[] }).items ?? []
     },
@@ -21,7 +21,7 @@ export function AvailableChannelsPage() {
   const list = (data as Channel[]) ?? []
   return (
     <Page>
-      <PageHeader title="Available Channels" description="Healthy channels and supported models — GET /user/available-channels/available." />
+      <PageHeader title="Available Channels" description="Healthy channels and supported models — GET /channels/available." />
       {list.length === 0 ? <Section><Card className="rounded-none"><CardContent className="p-6 text-sm text-muted-foreground">No available channels — contact admin or check /admin/channels/monitor.</CardContent></Card></Section> : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {list.map((c) => (

@@ -25,7 +25,7 @@ export function DashboardPage() {
   const trendQ = useQuery({
     queryKey: ["dashboard-trend"],
     queryFn: async () => {
-      const res = await httpClient.get<{ data: Trend } | Trend>("/user/usage/dashboard/trend")
+      const res = await httpClient.get<{ data: Trend } | Trend>("/usage/dashboard/trend")
       const d = res.data as unknown as { data?: Trend }
       return (Array.isArray(d) ? d : (d.data ?? [])) as Trend
     },
@@ -47,7 +47,7 @@ export function DashboardPage() {
         <MetricCard label="Active Channels" value={d.active_channels ?? 0} hint="Healthy" />
         <MetricCard label="Tokens" value={d.total_tokens ?? 0} hint="Consumed" />
       </div>
-      <Section title="Usage Trend" description="Daily request volume from /user/usage/dashboard/trend">
+      <Section title="Usage Trend" description="Daily request volume from /usage/dashboard/trend">
         <Card className="rounded-none">
           <CardHeader><CardTitle className="text-sm">Daily Requests</CardTitle></CardHeader>
           <CardContent>
