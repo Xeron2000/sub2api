@@ -17,7 +17,7 @@ export function DashboardPage() {
   const statsQ = useQuery({
     queryKey: dashboardKeys.stats(),
     queryFn: async () => {
-      const res = await httpClient.get<Stats>("/dashboard/stats")
+      const res = await httpClient.get<Stats>("/usage/dashboard/stats")
       return res.data as Stats
     },
     retry: false,
