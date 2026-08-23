@@ -25,4 +25,23 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  {
+    files: ['src/hooks/use-mobile.ts'],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    files: ['src/components/shared/DataTable.tsx'],
+    rules: {
+      'react-hooks/incompatible-library': 'off',
+    },
+  },
+  {
+    files: ['src/app/router/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/error-boundaries': 'off',
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

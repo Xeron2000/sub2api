@@ -21,7 +21,5 @@
   },
   "menuColor": "inverted",
   "menuAccent": "subtle",
-  "registries": {},
-  "_preset": "b4YsqxoEWf",
-  "_preset_source": "pnpm dlx shadcn@latest init --preset b4YsqxoEWf --base radix --template vite"
+  "registries": {}
 }
