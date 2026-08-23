@@ -1,6 +1,4 @@
-//go:build !embed
-
-// Package web provides embedded web assets for the application.
+// Package web provides embedded web assets shim (frontend decoupled).
 package web
 
 import (
