@@ -36,7 +36,7 @@ export function RegisterPage() {
       <PageHeader title="Create account" description="Register a new account." />
       <Section>
         <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-md space-y-4">
-          <div className="space-y-1"><Label>Email</Label><Input {...form.register("email")} />{form.formState.errors.email && <p className="text-destructive text-xs">{form.formState.errors.email.message}</p>}</div>
+          <div className="space-y-1"><Label>Email</Label><Input type="email" {...form.register("email")} />{form.formState.errors.email && <p className="text-destructive text-xs">{form.formState.errors.email.message}</p>}</div>
           <div className="space-y-1">
             <Label>Password</Label>
             <div className="relative">

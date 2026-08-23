@@ -12,7 +12,7 @@ import { LoadingState, ErrorState } from "@/components/shared/EmptyState"
 export function PurchasePage() {
   const [plan, setPlan] = useState("basic")
   const [method, setMethod] = useState("wechat")
-  const plansQ = useQuery({ queryKey: ["purchase-plans"], queryFn: async () => (await httpClient.get("/user/subscriptions")).data, retry: false })
+  const plansQ = useQuery({ queryKey: ["purchase-plans"], queryFn: async () => (await httpClient.get("/subscriptions")).data, retry: false })
   const mut = useMutation({
     mutationFn: async () => {
       const res = await httpClient.post("/payment/create", { plan, pay_method: method })

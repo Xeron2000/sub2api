@@ -8,9 +8,9 @@ import { Progress } from "@/components/ui/progress"
 import { LoadingState, ErrorState } from "@/components/shared/EmptyState"
 
 export function SubscriptionsPage() {
-  const summaryQ = useQuery({ queryKey: ["sub-summary"], queryFn: async () => (await httpClient.get("/user/subscriptions/summary")).data })
-  const activeQ = useQuery({ queryKey: ["sub-active"], queryFn: async () => (await httpClient.get("/user/subscriptions/active")).data })
-  const progressQ = useQuery({ queryKey: ["sub-progress"], queryFn: async () => (await httpClient.get("/user/subscriptions/progress")).data, retry: false })
+  const summaryQ = useQuery({ queryKey: ["sub-summary"], queryFn: async () => (await httpClient.get("/subscriptions/summary")).data, retry: false })
+  const activeQ = useQuery({ queryKey: ["sub-active"], queryFn: async () => (await httpClient.get("/subscriptions/active")).data, retry: false })
+  const progressQ = useQuery({ queryKey: ["sub-progress"], queryFn: async () => (await httpClient.get("/subscriptions/progress")).data, retry: false })
   const purchaseMut = useMutation({
     mutationFn: async (plan: string) => (await httpClient.post("/payment/create", { plan })).data,
     onSuccess: (d) => { const oid = (d as { order_id?: string })?.order_id; if (oid) window.location.href = `/payment/qrcode?order_id=${oid}`; else toast.info(JSON.stringify(d)) },
