@@ -18,7 +18,8 @@ export function AirwallexPaymentPage() {
       return res.data as { status: string; amount?: number; pay_url?: string }
     },
     enabled: !!orderId,
-    refetchInterval: (q) => {
+    refetchInterval: (q) => { // max 60 polls, stop on not pending
+      const count = (q.state.dataUpdateCount ?? 0); if (count > 60) return false;
       const s = (q.state.data as { status?: string } | null)?.status
       return s === "pending" || s === "created" ? 3000 : false
     },

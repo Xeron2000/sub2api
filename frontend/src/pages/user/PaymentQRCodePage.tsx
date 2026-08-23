@@ -18,7 +18,8 @@ export function PaymentQRCodePage() {
       return res.data as { status: string; qr_code?: string; pay_url?: string; amount?: number }
     },
     enabled: !!orderId,
-    refetchInterval: (q) => {
+    refetchInterval: (q) => { // max 60 polls, stop on not pending
+      const count = (q.state.dataUpdateCount ?? 0); if (count > 60) return false;
       const s = (q.state.data as { status?: string } | null)?.status
       return s === "pending" || s === "created" ? 3000 : false
     },
