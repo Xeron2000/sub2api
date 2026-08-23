@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { Page, PageHeader, Section } from "@/components/shared/Page"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,8 +27,8 @@ export function BatchImageGuidePage() {
   })
   const mut = useMutation({
     mutationFn: async () => (await httpClient.post("/v1/images/batches", { prompt, n: 1 })).data,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["image-batches"] }); alert("Batch submitted"); },
-    onError: (e) => alert((e as Error).message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["image-batches"] }); toast.success("Batch submitted"); },
+    onError: (e) => toast.error((e as Error).message),
   })
   return (
     <Page>

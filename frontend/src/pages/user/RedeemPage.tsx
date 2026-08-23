@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -31,8 +32,8 @@ export function RedeemPage() {
   })
   const mut = useMutation({
     mutationFn: async (v: V) => (await httpClient.post("/redeem", v)).data,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["redeem-history"] }); form.reset(); alert("Redeem successful"); },
-    onError: (e) => alert((e as Error).message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["redeem-history"] }); form.reset(); toast.success("Redeem successful"); },
+    onError: (e) => toast.error((e as Error).message),
   })
   return (
     <Page>

@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
 import { Page, PageHeader, Section } from "@/components/shared/Page"
@@ -12,8 +13,8 @@ export function AffiliatePage() {
   const [amount, setAmount] = useState("")
   const mut = useMutation({
     mutationFn: async () => (await httpClient.post("/user/aff/transfer", { amount: Number(amount) })).data,
-    onSuccess: () => { alert("Transferred"); refetch(); setAmount("") },
-    onError: (e) => alert((e as Error).message),
+    onSuccess: () => { toast.success("Transferred"); refetch(); setAmount("") },
+    onError: (e) => toast.error((e as Error).message),
   })
   return (
     <Page>

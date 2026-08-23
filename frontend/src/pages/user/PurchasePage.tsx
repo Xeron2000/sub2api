@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
 import { Page, PageHeader, Section } from "@/components/shared/Page"
@@ -21,9 +22,9 @@ export function PurchasePage() {
       if (d.pay_url) window.open(d.pay_url, "_blank")
       else if (d.qr_code) window.location.href = `/payment/qrcode?order_id=${d.order_id}`
       else if (d.order_id) window.location.href = `/payment/qrcode?order_id=${d.order_id}`
-      else alert(JSON.stringify(d))
+      else toast.info(JSON.stringify(d))
     },
-    onError: (e) => alert((e as Error).message),
+    onError: (e) => toast.error((e as Error).message),
   })
   if (plansQ.isLoading) return <LoadingState />
   if (plansQ.error) return <ErrorState message={(plansQ.error as Error).message} onRetry={() => plansQ.refetch()} />

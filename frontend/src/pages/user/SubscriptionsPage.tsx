@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
 import { Page, PageHeader, Section } from "@/components/shared/Page"
@@ -12,7 +13,7 @@ export function SubscriptionsPage() {
   const progressQ = useQuery({ queryKey: ["sub-progress"], queryFn: async () => (await httpClient.get("/user/subscriptions/progress")).data, retry: false })
   const purchaseMut = useMutation({
     mutationFn: async (plan: string) => (await httpClient.post("/payment/create", { plan })).data,
-    onSuccess: (d) => { const oid = (d as { order_id?: string })?.order_id; if (oid) window.location.href = `/payment/qrcode?order_id=${oid}`; else alert(JSON.stringify(d)) },
+    onSuccess: (d) => { const oid = (d as { order_id?: string })?.order_id; if (oid) window.location.href = `/payment/qrcode?order_id=${oid}`; else toast.info(JSON.stringify(d)) },
   })
   if (summaryQ.isLoading) return <LoadingState />
   if (summaryQ.error) return <ErrorState message={(summaryQ.error as Error).message} onRetry={() => summaryQ.refetch()} />

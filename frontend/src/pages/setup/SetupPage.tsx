@@ -1,3 +1,4 @@
+import { toast } from "sonner"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -38,12 +39,12 @@ export function SetupPage() {
   const testDb = async () => {
     const v = form.getValues()
     await httpClient.post("/setup/test-db", { host: v.db_host, port: v.db_port, user: v.db_user, password: v.db_password, dbname: v.db_name })
-    alert("Database connection OK")
+    toast.success("Database connection OK")
   }
   const testRedis = async () => {
     const v = form.getValues()
     await httpClient.post("/setup/test-redis", { host: v.redis_host, port: v.redis_port })
-    alert("Redis connection OK")
+    toast.success("Redis connection OK")
   }
   const onSubmit = async (v: V) => {
     setError(null)
