@@ -20,10 +20,32 @@ type Props<T> = {
   onRetry?: () => void
   emptyTitle?: string
   emptyDescription?: string
+  pagination?: { pageIndex: number; pageSize: number }
+  sorting?: SortingState
+  onPaginationChange?: (updater: { pageIndex: number; pageSize: number } | ((old: { pageIndex: number; pageSize: number }) => { pageIndex: number; pageSize: number })) => void
+  onSortingChange?: (updater: SortingState | ((old: SortingState) => SortingState)) => void
 }
 
-export function DataTable<T>({ data, columns, loading, error, onRetry, emptyTitle = "No data", emptyDescription }: Props<T>) {
-  const [sorting, setSorting] = useState<SortingState>([])
+export function DataTable<T>({
+  data,
+  columns,
+  loading,
+  error,
+  onRetry,
+  emptyTitle = "No data",
+  emptyDescription,
+  pagination,
+  sorting,
+  onPaginationChange,
+  onSortingChange,
+}: Props<T>) {
+  const [internalSorting, setInternalSorting] = useState<SortingState>([])
+  const [internalPagination, setInternalPagination] = useState({ pageIndex: 0, pageSize: 20 })
+
+  const sortingState = sorting ?? internalSorting
+  const paginationState = pagination ?? internalPagination
+  const handleSortingChange = onSortingChange ?? setInternalSorting
+  const handlePaginationChange = onPaginationChange ?? setInternalPagination
 
   const table = useReactTable({
     data,
@@ -31,8 +53,9 @@ export function DataTable<T>({ data, columns, loading, error, onRetry, emptyTitl
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    state: { sorting },
+    onSortingChange: handleSortingChange as (updater: SortingState | ((old: SortingState) => SortingState)) => void,
+    onPaginationChange: handlePaginationChange as (updater: { pageIndex: number; pageSize: number } | ((old: { pageIndex: number; pageSize: number }) => { pageIndex: number; pageSize: number })) => void,
+    state: { sorting: sortingState, pagination: paginationState },
   })
 
   if (loading) return <LoadingState />

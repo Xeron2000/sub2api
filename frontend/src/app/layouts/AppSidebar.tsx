@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Layers, ShieldAlert, Settings, CreditCard, Megaphone, Activity, Server } from "lucide-react"
+import { LayoutDashboard, Users, Layers, ShieldAlert, Settings, CreditCard, Megaphone, Activity, Server, Sun, Moon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +11,10 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 import { useLocation, Link } from "react-router-dom"
+import { useTheme } from "@/components/theme-provider"
+import { getLocale, setLocale } from "@/i18n"
+import { Button } from "@/components/ui/button"
+import { useState } from "react"
 
 const navGroups = [
   {
@@ -61,12 +65,23 @@ const navGroups = [
 
 export function AppSidebar() {
   const location = useLocation()
+  const { theme, setTheme } = useTheme()
+  const [locale, setLocaleState] = useState(getLocale())
+
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark")
+  const toggleLocale = () => {
+    const next = locale === "en" ? "zh" : "en"
+    setLocale(next as "en" | "zh")
+    setLocaleState(next as "en" | "zh")
+  }
+
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-2">
           <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-sm text-xs font-bold">S2</div>
           <span className="font-heading text-sm font-semibold">Sub2API</span>
+          <span className="text-muted-foreground ml-auto text-xs">{locale.toUpperCase()}</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -89,7 +104,15 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <div className="text-muted-foreground px-2 py-2 text-xs">Professional AI Infrastructure Console</div>
+        <div className="flex items-center gap-1 p-2">
+          <Button variant="ghost" size="icon-sm" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={toggleLocale} aria-label="Toggle language">
+            {locale === "en" ? "中文" : "EN"}
+          </Button>
+          <span className="text-muted-foreground ml-auto text-xs">AI Console</span>
+        </div>
       </SidebarFooter>
     </Sidebar>
   )

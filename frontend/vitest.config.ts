@@ -7,10 +7,11 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    environmentOptions: { jsdom: { url: "http://localhost/" } },
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
     include: ["src/**/*.{test,spec}.{ts,tsx}", "tests/**/*.{test,spec}.{ts,tsx}"],
     coverage: { provider: "v8", reporter: ["text", "lcov"] },
-    passWithNoTests: true,
+    passWithNoTests: false,
   },
 })
