@@ -1,40 +1,34 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
-import { Page, PageHeader, Section, Toolbar } from "@/components/shared/Page"
-import { DataTable } from "@/components/shared/DataTable"
-import type { ColumnDef } from "@tanstack/react-table"
+import { Page, PageHeader, Section } from "@/components/shared/Page"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useTableUrlState } from "@/hooks/useTableUrlState"
+import { Label } from "@/components/ui/label"
+import { useState } from "react"
 
-type Row = { id: number; name: string; status?: string }
-const cols: ColumnDef<Row>[] = [{ accessorKey: "id", header: "ID" }, { accessorKey: "name", header: "Name" }, { accessorKey: "status", header: "Status" }]
-const apiMap: Record<string, string> = {
-  Usage: "/user/usage",
-  Redeem: "/user/redeem/history",
-  Affiliate: "/user/aff",
-  AvailableChannels: "/available-channels/available",
-  Profile: "/user/profile",
-  Subscriptions: "/user/subscriptions",
-}
 export function AffiliatePage() {
-  const { pagination, sorting, search, setPagination, setSorting, setSearch } = useTableUrlState({ pageSize: 20 })
-  const path = apiMap["Affiliate"] || "/user/affiliate"
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["affiliate", search, pagination.pageIndex, sorting],
-    queryFn: async () => {
-      const res = await httpClient.get<{ items: Row[] }>(path, { params: { search, page: pagination.pageIndex+1, page_size: pagination.pageSize } })
-      const d = res.data as { items?: Row[] } | Row[] | Record<string, unknown>
-      if (Array.isArray(d)) return d as Row[]
-      if (d && typeof d === "object" && "items" in d) return (d as { items?: Row[] }).items ?? []
-      return d ? [d as unknown as Row] : []
-    },
+  const { data, refetch } = useQuery({ queryKey: ["aff"], queryFn: async () => (await httpClient.get("/user/aff")).data as { balance: number; invited: number; code: string } })
+  const [amount, setAmount] = useState("")
+  const mut = useMutation({
+    mutationFn: async () => (await httpClient.post("/user/aff/transfer", { amount: Number(amount) })).data,
+    onSuccess: () => { alert("Transferred"); refetch(); setAmount("") },
+    onError: (e) => alert((e as Error).message),
   })
   return (
     <Page>
-      <PageHeader title="Affiliate" description="Affiliate management." />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
-      <Section><DataTable data={(data as Row[]) ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No data" /></Section>
+      <PageHeader title="Affiliate" description="Rebates and transfers — GET /user/aff and POST /user/aff/transfer." />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="rounded-none"><CardHeader><CardTitle className="text-sm">Balance</CardTitle></CardHeader><CardContent className="text-2xl">{(data as { balance?: number })?.balance ?? 0}</CardContent></Card>
+        <Card className="rounded-none"><CardHeader><CardTitle className="text-sm">Invited</CardTitle></CardHeader><CardContent className="text-2xl">{(data as { invited?: number })?.invited ?? 0}</CardContent></Card>
+        <Card className="rounded-none"><CardHeader><CardTitle className="text-sm">Invite Code</CardTitle></CardHeader><CardContent className="font-mono text-sm">{(data as { code?: string })?.code ?? "—"}</CardContent></Card>
+      </div>
+      <Section title="Transfer to Balance">
+        <Card className="rounded-none max-w-md"><CardContent className="p-4 space-y-3">
+          <div className="space-y-1"><Label>Amount</Label><Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" /></div>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending || !amount}>{mut.isPending ? "Transferring..." : "Transfer"}</Button>
+        </CardContent></Card>
+      </Section>
     </Page>
   )
 }

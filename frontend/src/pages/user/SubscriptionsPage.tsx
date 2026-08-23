@@ -1,40 +1,41 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
-import { Page, PageHeader, Section, Toolbar } from "@/components/shared/Page"
-import { DataTable } from "@/components/shared/DataTable"
-import type { ColumnDef } from "@tanstack/react-table"
+import { Page, PageHeader, Section } from "@/components/shared/Page"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useTableUrlState } from "@/hooks/useTableUrlState"
+import { Progress } from "@/components/ui/progress"
+import { LoadingState, ErrorState } from "@/components/shared/EmptyState"
 
-type Row = { id: number; name: string; status?: string }
-const cols: ColumnDef<Row>[] = [{ accessorKey: "id", header: "ID" }, { accessorKey: "name", header: "Name" }, { accessorKey: "status", header: "Status" }]
-const apiMap: Record<string, string> = {
-  Usage: "/user/usage",
-  Redeem: "/user/redeem/history",
-  Affiliate: "/user/aff",
-  AvailableChannels: "/available-channels/available",
-  Profile: "/user/profile",
-  Subscriptions: "/user/subscriptions",
-}
 export function SubscriptionsPage() {
-  const { pagination, sorting, search, setPagination, setSorting, setSearch } = useTableUrlState({ pageSize: 20 })
-  const path = apiMap["Subscriptions"] || "/user/subscriptions"
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["subscriptions", search, pagination.pageIndex, sorting],
-    queryFn: async () => {
-      const res = await httpClient.get<{ items: Row[] }>(path, { params: { search, page: pagination.pageIndex+1, page_size: pagination.pageSize } })
-      const d = res.data as { items?: Row[] } | Row[] | Record<string, unknown>
-      if (Array.isArray(d)) return d as Row[]
-      if (d && typeof d === "object" && "items" in d) return (d as { items?: Row[] }).items ?? []
-      return d ? [d as unknown as Row] : []
-    },
+  const summaryQ = useQuery({ queryKey: ["sub-summary"], queryFn: async () => (await httpClient.get("/user/subscriptions/summary")).data })
+  const activeQ = useQuery({ queryKey: ["sub-active"], queryFn: async () => (await httpClient.get("/user/subscriptions/active")).data })
+  const progressQ = useQuery({ queryKey: ["sub-progress"], queryFn: async () => (await httpClient.get("/user/subscriptions/progress")).data, retry: false })
+  const purchaseMut = useMutation({
+    mutationFn: async (plan: string) => (await httpClient.post("/payment/create", { plan })).data,
+    onSuccess: (d) => { const oid = (d as { order_id?: string })?.order_id; if (oid) window.location.href = `/payment/qrcode?order_id=${oid}`; else alert(JSON.stringify(d)) },
   })
+  if (summaryQ.isLoading) return <LoadingState />
+  if (summaryQ.error) return <ErrorState message={(summaryQ.error as Error).message} onRetry={() => summaryQ.refetch()} />
   return (
     <Page>
-      <PageHeader title="Subscriptions" description="Subscriptions management." />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
-      <Section><DataTable data={(data as Row[]) ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No data" /></Section>
+      <PageHeader title="Subscriptions" description="Active plans, quota progress and renewal — GET /user/subscriptions/*." />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="rounded-none"><CardHeader><CardTitle className="text-sm">Summary</CardTitle></CardHeader><CardContent><pre className="text-xs bg-muted p-2 overflow-auto max-h-40">{JSON.stringify(summaryQ.data ?? {}, null, 2)}</pre></CardContent></Card>
+        <Card className="rounded-none"><CardHeader><CardTitle className="text-sm">Active</CardTitle></CardHeader><CardContent><pre className="text-xs bg-muted p-2 overflow-auto max-h-40">{JSON.stringify(activeQ.data ?? {}, null, 2)}</pre></CardContent></Card>
+      </div>
+      <Section title="Quota Progress">
+        <Card className="rounded-none"><CardContent className="p-4 space-y-2">
+          <div className="flex justify-between text-sm"><span>Used</span><span>{(progressQ.data as { used?: number })?.used ?? 0} / {(progressQ.data as { total?: number })?.total ?? 0}</span></div>
+          <Progress value={(() => { const p = progressQ.data as { used?: number; total?: number } | undefined; if (!p?.total) return 0; return Math.round((p.used! / p.total!) * 100) })()} />
+          <Button size="sm" onClick={() => progressQ.refetch()}>Refresh Progress</Button>
+        </CardContent></Card>
+      </Section>
+      <Section title="Purchase">
+        <div className="flex gap-2">
+          <Button onClick={() => purchaseMut.mutate("basic")} disabled={purchaseMut.isPending}>Buy Basic</Button>
+          <Button variant="outline" onClick={() => purchaseMut.mutate("pro")} disabled={purchaseMut.isPending}>Buy Pro</Button>
+        </div>
+      </Section>
     </Page>
   )
 }

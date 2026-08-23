@@ -1,40 +1,40 @@
 import { useQuery } from "@tanstack/react-query"
 import { httpClient } from "@/api/client/http-client"
-import { Page, PageHeader, Section, Toolbar } from "@/components/shared/Page"
-import { DataTable } from "@/components/shared/DataTable"
-import type { ColumnDef } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useTableUrlState } from "@/hooks/useTableUrlState"
+import { Page, PageHeader, Section } from "@/components/shared/Page"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { LoadingState, ErrorState } from "@/components/shared/EmptyState"
 
-type Row = { id: number; name: string; status?: string }
-const cols: ColumnDef<Row>[] = [{ accessorKey: "id", header: "ID" }, { accessorKey: "name", header: "Name" }, { accessorKey: "status", header: "Status" }]
-const apiMap: Record<string, string> = {
-  Usage: "/user/usage",
-  Redeem: "/user/redeem/history",
-  Affiliate: "/user/aff",
-  AvailableChannels: "/available-channels/available",
-  Profile: "/user/profile",
-  Subscriptions: "/user/subscriptions",
-}
+type Channel = { id: number; name: string; status: string; models?: string[]; quota?: number }
+
 export function AvailableChannelsPage() {
-  const { pagination, sorting, search, setPagination, setSorting, setSearch } = useTableUrlState({ pageSize: 20 })
-  const path = apiMap["AvailableChannels"] || "/user/availablechannels"
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["availablechannels", search, pagination.pageIndex, sorting],
+    queryKey: ["available-channels"],
     queryFn: async () => {
-      const res = await httpClient.get<{ items: Row[] }>(path, { params: { search, page: pagination.pageIndex+1, page_size: pagination.pageSize } })
-      const d = res.data as { items?: Row[] } | Row[] | Record<string, unknown>
-      if (Array.isArray(d)) return d as Row[]
-      if (d && typeof d === "object" && "items" in d) return (d as { items?: Row[] }).items ?? []
-      return d ? [d as unknown as Row] : []
+      const res = await httpClient.get<{ items: Channel[] } | Channel[]>("/user/available-channels/available")
+      const d = res.data as { items?: Channel[] } | Channel[]
+      return Array.isArray(d) ? d : (d as { items?: Channel[] }).items ?? []
     },
   })
+  if (isLoading) return <LoadingState />
+  if (error) return <ErrorState message={(error as Error).message} onRetry={() => refetch()} />
+  const list = (data as Channel[]) ?? []
   return (
     <Page>
-      <PageHeader title="AvailableChannels" description="AvailableChannels management." />
-      <Toolbar><Input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" /><Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button></Toolbar>
-      <Section><DataTable data={(data as Row[]) ?? []} columns={cols} loading={isLoading} error={error ? (error as Error).message : null} onRetry={() => refetch()} pagination={pagination} sorting={sorting} onPaginationChange={setPagination} onSortingChange={setSorting} emptyTitle="No data" /></Section>
+      <PageHeader title="Available Channels" description="Healthy channels and supported models — GET /user/available-channels/available." />
+      {list.length === 0 ? <Section><Card className="rounded-none"><CardContent className="p-6 text-sm text-muted-foreground">No available channels — contact admin or check /admin/channels/monitor.</CardContent></Card></Section> : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {list.map((c) => (
+            <Card key={c.id} className="rounded-none">
+              <CardHeader><CardTitle className="text-sm flex justify-between"><span>{c.name}</span><Badge variant={c.status === "active" ? "default" : "outline"}>{c.status}</Badge></CardTitle></CardHeader>
+              <CardContent className="text-xs space-y-1">
+                <p className="text-muted-foreground">ID: {c.id} {c.quota !== undefined && `· Quota: ${c.quota}`}</p>
+                <p className="truncate">{c.models?.join(", ") ?? "—"}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </Page>
   )
 }
