@@ -1,0 +1,12 @@
+{
+  "name": "sub2api-root",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "test": "pnpm --dir frontend-new test",
+    "test:e2e": "pnpm --dir frontend-new test:e2e",
+    "lint": "pnpm --dir frontend-new lint",
+    "typecheck": "pnpm --dir frontend-new typecheck",
+    "build": "pnpm --dir frontend-new build"
+  }
+}
