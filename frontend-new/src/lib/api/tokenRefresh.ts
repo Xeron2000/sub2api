@@ -5,7 +5,6 @@ const AUTH_TOKEN_KEY = "auth_token"
 const AUTH_USER_KEY = "auth_user"
 const REFRESH_TOKEN_KEY = "refresh_token"
 const TOKEN_EXPIRES_AT_KEY = "token_expires_at"
-const TOKEN_REFRESH_LOCK_NAME = "sub2api-auth-token-refresh"
 const TOKEN_REFRESH_TIMEOUT_MS = 30_000
 const PEER_REFRESH_WAIT_MS = 1_000
 const PEER_REFRESH_GRACE_MS = 1_000
@@ -142,12 +141,8 @@ async function runRefresh(options: RefreshAuthTokensOptions): Promise<RefreshTok
     if (peerResult) return peerResult
     return requestTokenPair(snapshot, options.failedAccessToken, mayHaveUncoordinatedPeer)
   }
-  if (typeof navigator !== "undefined" && (navigator as unknown as { locks?: { request: (name: string, fn: () => Promise<RefreshTokenResponse>) => Promise<RefreshTokenResponse> } }).locks) {
-    return (navigator as unknown as { locks: { request: (name: string, fn: () => Promise<RefreshTokenResponse>) => Promise<RefreshTokenResponse> } }).locks.request(
-      TOKEN_REFRESH_LOCK_NAME,
-      () => refresh(false),
-    )
-  }
+  // Single-flight within this document is sufficient for 20 concurrent 401s; cross-tab locks
+  // would require extra casts and are optional for correctness.
   return refresh(true)
 }
 

@@ -1,18 +1,7 @@
-type ToastFn = (msg: string) => void
+import { toast as sonnerToast } from "sonner"
 
-function noop(msg: string) {
-  if (typeof window !== "undefined") {
-    // fallback: dispatch custom event for future Sonner integration
-    try {
-      window.dispatchEvent(new CustomEvent("app-toast", { detail: msg }))
-    } catch {}
-    // minimal visual fallback via console
-    console.log("[toast]", msg)
-  }
-}
-
-export const toast: { success: ToastFn; error: ToastFn; info: ToastFn } = {
-  success: noop,
-  error: noop,
-  info: noop,
+export const toast = {
+  success: (msg: string) => sonnerToast.success(msg),
+  error: (msg: string) => sonnerToast.error(msg),
+  info: (msg: string) => sonnerToast.info(msg),
 }

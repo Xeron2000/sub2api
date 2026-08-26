@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
+import { getAuthStatus } from "@/lib/auth"
 import { useQuery } from "@tanstack/react-query"
 import { AppShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
@@ -8,14 +9,15 @@ import { ErrorState } from "@/components/shared/ErrorState"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { queryKeys } from "@/lib/query/keys"
-import { apiClient } from "@/lib/api/client"
+import { getCurrentUser } from "@/lib/api/auth"
+import { getDashboardStats } from "@/lib/api/usage"
 import { getAppErrorMessage } from "@/lib/api/errors"
 import { useTranslation } from "@/i18n"
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: () => {
-    if (typeof window !== "undefined" && !localStorage.getItem("auth_token")) {
-      throw redirect({ to: "/login", search: { redirect: "/dashboard" } })
+    if (typeof window !== "undefined" && getAuthStatus() === "anonymous") {
+      throw redirect({ to: "/login", search: { redirect: "/dashboard" } as Record<string, string> })
     }
   },
   component: DashboardPage,
@@ -50,19 +52,13 @@ function DashboardPage() {
 
   const userQuery = useQuery({
     queryKey: queryKeys.auth.currentUser(),
-    queryFn: async ({ signal }) => {
-      const { data } = await apiClient.get("/auth/me", { signal })
-      return data as { email: string; role: string }
-    },
+    queryFn: () => getCurrentUser(),
     retry: false,
   })
 
   const statsQuery = useQuery({
     queryKey: queryKeys.usage.dashboard(),
-    queryFn: async ({ signal }) => {
-      const { data } = await apiClient.get("/usage/dashboard/stats", { signal })
-      return data as { total_keys?: number; total_usage?: number; balance?: number }
-    },
+    queryFn: ({ signal }) => getDashboardStats({ signal }),
     retry: false,
   })
 

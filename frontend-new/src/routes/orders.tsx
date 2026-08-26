@@ -13,7 +13,7 @@ function OrdersPage() {
     queryKey: ["orders"],
     queryFn: async () => {
       const { data } = await paymentAPI.getMyOrders()
-      const d = data as unknown as { items?: Array<{ id: string; status: string; amount: number; created_at: string }> }
+      const d = data as { items?: Array<{ id: string; status: string; amount: number; created_at: string }> }
       return (d.items ?? (data))
     },
   })

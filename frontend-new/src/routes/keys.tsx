@@ -17,8 +17,9 @@ import { StatusBadge } from "@/components/shared/StatusBadge"
 import { CopyButton } from "@/components/shared/CopyButton"
 import { DeleteConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { queryKeys } from "@/lib/query/keys"
-import { listKeys, createKey, updateKey, deleteKey  } from "@/lib/api/keys"
-import type {ApiKey} from "@/lib/api/keys";
+import { listKeys, createKey, updateKey, deleteKey } from "@/lib/api/keys"
+import type { ApiKey } from "@/lib/api/keys"
+import { getAuthStatus } from "@/lib/auth"
 import { useDebouncedValue } from "@/lib/hooks/useDebounce"
 import { getAppErrorMessage } from "@/lib/api/errors"
 import { useTranslation } from "@/i18n"
@@ -26,8 +27,8 @@ import { toast } from "@/lib/toast"
 
 export const Route = createFileRoute("/keys")({
   beforeLoad: () => {
-    if (typeof window !== "undefined" && !localStorage.getItem("auth_token")) {
-      throw redirect({ to: "/login", search: { redirect: "/keys" } })
+    if (typeof window !== "undefined" && getAuthStatus() === "anonymous") {
+      throw redirect({ to: "/login", search: { redirect: "/keys" } as Record<string, string> })
     }
   },
   component: KeysPage,
@@ -148,32 +149,23 @@ function KeysPage() {
             <div className="ml-auto"><Button variant="outline" onClick={() => query.refetch()}>{t("common.refresh")}</Button></div>
           </div>
 
-          <DataTable
+          <DataTable<ApiKey>
             columns={[
               { header: "ID", accessorKey: "id", align: "right" },
               { header: t("common.name"), accessorKey: "name" },
-              { header: t("common.status"), cell: (r: unknown) => {
-                const row = r as ApiKey
-                return <StatusBadge status={row.status === "active" ? "success" : row.status === "inactive" ? "warning" : "default"} label={String(row.status)} />
-              } },
-              { header: "Key", cell: (r: unknown) => {
-                const row = r as ApiKey
-                return row.key ? <CopyButton value={String(row.key)} label={t("common.copy")} /> : <span className="text-muted-foreground">-</span>
-              } },
+              { header: t("common.status"), cell: (row) => <StatusBadge status={row.status === "active" ? "success" : row.status === "inactive" ? "warning" : "default"} label={String(row.status)} /> },
+              { header: "Key", cell: (row) => (row.key ? <CopyButton value={String(row.key)} label={t("common.copy")} /> : <span className="text-muted-foreground">-</span>) },
               { header: t("common.created") !== "common.created" ? t("common.created") : "Created", accessorKey: "created_at" },
               {
                 header: t("common.actions"),
                 align: "right",
-                cell: (r: unknown) => {
-                  const row = r as ApiKey
-                  return (
+                cell: (row) => (
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => { setFormError(null); setEditRow(row) }}>{t("common.edit")}</Button>
                       <Button variant="ghost" size="sm" onClick={() => setDeleteId(row.id)}>{t("common.delete")}</Button>
                     </div>
                   )
                 },
-              },
             ]}
             data={rows}
             loading={isLoading}
@@ -181,7 +173,7 @@ function KeysPage() {
             onRetry={() => query.refetch()}
             emptyTitle={t("keys.emptyTitle") !== "keys.emptyTitle" ? t("keys.emptyTitle") : "No API keys yet"}
             emptyAction={<Button onClick={() => setCreateOpen(true)}>{t("common.create")}</Button>}
-            getRowId={(r: unknown) => (r as ApiKey).id}
+            getRowId={(r) => r.id}
           />
           <DataTablePagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
         </div>

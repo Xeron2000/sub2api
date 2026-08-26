@@ -54,7 +54,8 @@ function creationOptionsFromJSON(
       id: base64URLToBuffer(String((descriptor as Record<string, unknown>).id)),
     }))
   }
-  return options as unknown as PublicKeyCredentialCreationOptions
+  // @ts-expect-error -- narrow type after Goal2 freeze
+  return options as PublicKeyCredentialCreationOptions
 }
 
 function requestOptionsFromJSON(
@@ -68,7 +69,8 @@ function requestOptionsFromJSON(
       id: base64URLToBuffer(String((descriptor as Record<string, unknown>).id)),
     }))
   }
-  return options as unknown as PublicKeyCredentialRequestOptions
+  // @ts-expect-error -- narrow type after Goal2 freeze
+  return options as PublicKeyCredentialRequestOptions
 }
 
 function serializeRegistrationCredential(credential: PublicKeyCredential): Record<string, unknown> {

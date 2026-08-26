@@ -13,7 +13,7 @@ function OrdersPage() {
     queryKey: ["admin", "orders"],
     queryFn: async () => {
       const { data } = await adminPaymentAPI.getOrders()
-      const d = data as unknown as { items?: Array<{ id: string; amount: number; status: string }> }
+      const d = data as { items?: Array<{ id: string; amount: number; status: string }> }
       return d.items ?? (data)
     },
   })

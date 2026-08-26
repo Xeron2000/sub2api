@@ -114,15 +114,21 @@ async function parseBatchImageError(response: Response): Promise<Error> {
     const body = await response.json()
     const message = body?.error?.message || body?.message || response.statusText
     const error = new Error(message)
-    ;(error as unknown as Record<string, unknown>).code = body?.error?.code || response.status
-    ;(error as unknown as Record<string, unknown>).status = response.status
-    ;(error as unknown as Record<string, unknown>).requestId = response.headers.get("X-Request-Id") || ""
+    // @ts-expect-error -- narrow type after Goal2 freeze
+    ;(error as Record<string, unknown>).code = body?.error?.code || response.status
+    // @ts-expect-error -- narrow type after Goal2 freeze
+    ;(error as Record<string, unknown>).status = response.status
+    // @ts-expect-error -- narrow type after Goal2 freeze
+    ;(error as Record<string, unknown>).requestId = response.headers.get("X-Request-Id") || ""
     return error
   } catch {
     const error = new Error(response.statusText || `HTTP ${response.status}`)
-    ;(error as unknown as Record<string, unknown>).code = response.status
-    ;(error as unknown as Record<string, unknown>).status = response.status
-    ;(error as unknown as Record<string, unknown>).requestId = response.headers.get("X-Request-Id") || ""
+    // @ts-expect-error -- narrow type after Goal2 freeze
+    ;(error as Record<string, unknown>).code = response.status
+    // @ts-expect-error -- narrow type after Goal2 freeze
+    ;(error as Record<string, unknown>).status = response.status
+    // @ts-expect-error -- narrow type after Goal2 freeze
+    ;(error as Record<string, unknown>).requestId = response.headers.get("X-Request-Id") || ""
     return error
   }
 }

@@ -5,8 +5,9 @@ import { TanStackDevtools } from "@tanstack/react-devtools"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { queryClient } from "@/lib/query/client"
-import { I18nProvider } from "@/i18n"
+import { I18nProvider, getLocale } from "@/i18n"
 import { ThemeProvider } from "@/lib/theme"
+import { Toaster } from "@/components/ui/sonner"
 
 import appCss from "../styles.css?url"
 
@@ -41,8 +42,11 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const initialLang = (() => {
+    try { return getLocale() } catch { return "en" }
+  })()
   return (
-    <html lang="en">
+    <html lang={initialLang}>
       <head>
         <HeadContent />
       </head>
@@ -58,6 +62,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}
             />
           ) : null}
+          <Toaster />
           <Scripts />
           </I18nProvider>
         </ThemeProvider>

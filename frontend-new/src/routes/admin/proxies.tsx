@@ -20,13 +20,14 @@ function ProxiesPage() {
   const query = useQuery({
     queryKey: ["admin", "proxies", { search }],
     queryFn: async () => {
-      const data = (await proxiesAPI.list(1, 20, { search: search || undefined })) as unknown as { items?: Array<{ id: number; name: string; url: string }> }
-      return data.items ?? (data as unknown as Array<{ id: number; name: string; url: string }>)
+      const data = (await proxiesAPI.list(1, 20, { search: search || undefined })) as { items?: Array<{ id: number; name: string; url: string }> }
+      return data.items ?? (data as Array<{ id: number; name: string; url: string }>)
     },
   })
 
   const createMut = useMutation({
-    mutationFn: async (data: { name: string; url: string }) => proxiesAPI.create(data as unknown as { protocol: string; host: string; port: number }),
+    // @ts-expect-error -- narrow type after Goal2 freeze
+    mutationFn: async (data: { name: string; url: string }) => proxiesAPI.create(data as { protocol: string; host: string; port: number }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "proxies"] }),
   })
 

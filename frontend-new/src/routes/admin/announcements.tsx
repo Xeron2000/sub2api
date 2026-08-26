@@ -20,8 +20,8 @@ function AnnouncementsPage() {
   const query = useQuery({
     queryKey: ["admin", "announcements", { search }],
     queryFn: async () => {
-      const data = (await announcementsAPI.list(1, 20, { search: search || undefined })) as unknown as { items?: Array<{ id: number; title: string; status: string }> }
-      return data.items ?? (data as unknown as Array<{ id: number; title: string; status: string }>)
+      const data = (await announcementsAPI.list(1, 20, { search: search || undefined })) as { items?: Array<{ id: number; title: string; status: string }> }
+      return data.items ?? (data as Array<{ id: number; title: string; status: string }>)
     },
   })
 

@@ -114,7 +114,7 @@ function RedeemPage() {
                   { header: "Value", accessorKey: "value", align: "right" },
                   { header: "Date", accessorKey: "used_at" },
                 ]}
-                data={(historyQuery.data as unknown as Record<string, unknown>[]) ?? []}
+                data={(historyQuery.data as Record<string, unknown>[]) ?? []}
                 loading={historyQuery.isLoading}
                 error={historyQuery.isError ? "Failed to load history" : null}
                 onRetry={() => historyQuery.refetch()}

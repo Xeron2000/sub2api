@@ -172,7 +172,7 @@ function UIPlayground() {
               <div><p className="text-xs text-muted-foreground mb-2">Loading</p><DataTable columns={[{ header: "ID", accessorKey: "id" }]} data={[]} loading /></div>
               <div><p className="text-xs text-muted-foreground mb-2">Empty</p><DataTable columns={[{ header: "ID", accessorKey: "id" }]} data={[]} emptyTitle="No data" /></div>
               <div><p className="text-xs text-muted-foreground mb-2">Error</p><DataTable columns={[{ header: "ID", accessorKey: "id" }]} data={[]} error="Failed" onRetry={() => setErrorDemoKey(k=>k+1)} /></div>
-              <div><p className="text-xs text-muted-foreground mb-2">Populated + Pagination</p><DataTable columns={[{ header: "ID", accessorKey: "id", align: "right" }, { header: "Name", accessorKey: "name" }]} data={[{ id: 1, name: "a" }]} getRowId={(r: unknown)=>(r as {id:number}).id} /><div className="mt-2"><DataTablePagination page={1} pageSize={10} total={25} onPageChange={()=>{}} /></div></div>
+              <div><p className="text-xs text-muted-foreground mb-2">Populated + Pagination</p><DataTable columns={[{ header: "ID", accessorKey: "id", align: "right" }, { header: "Name", accessorKey: "name" }]} data={[{ id: 1, name: "a" }]} getRowId={(r) => (r as { id: number }).id} /><div className="mt-2"><DataTablePagination page={1} pageSize={10} total={25} onPageChange={()=>{}} /></div></div>
             </CardContent></Card>
           </div>
         </TabsContent>

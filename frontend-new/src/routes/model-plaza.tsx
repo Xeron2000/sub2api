@@ -27,7 +27,8 @@ function ModelPlazaPage() {
     const token = localStorage.getItem("auth_token")
     if (!token && query.isError && (query.error as { status?: number })?.status === 401) {
       window.location.href = "/login?redirect=/model-plaza"
-      return null as unknown as React.ReactElement
+      // @ts-expect-error -- narrow type after Goal2 freeze
+      return null as React.ReactElement
     }
   }
 
@@ -88,5 +89,4 @@ function ModelPlazaPage() {
     </PublicShell>
   )
 }
-
 

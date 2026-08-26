@@ -19,7 +19,7 @@ function AccountsPage() {
     queryKey: ["admin", "accounts", { search }],
     queryFn: async () => {
       const { data } = await accountsAPI.list({ search: search || undefined })
-      const d = data as unknown as { items?: Array<{ id: number; email: string; status: string }> }
+      const d = data as { items?: Array<{ id: number; email: string; status: string }> }
       return d.items ?? (data)
     },
   })

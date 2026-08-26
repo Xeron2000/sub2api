@@ -53,7 +53,7 @@ function PlansPage() {
     queryKey: ["admin", "orders", "plans"],
     queryFn: async () => {
       const { data } = await adminPaymentAPI.getPlans()
-      const d = data as unknown as { items?: Array<{ id: number; name: string; price: number }> }
+      const d = data as { items?: Array<{ id: number; name: string; price: number }> }
       return d.items ?? (data)
     },
   })

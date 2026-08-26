@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, useRouterState, redirect } from "@tanstack/react-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -12,13 +12,14 @@ import { login, persistAuthTokens, clearAuth } from "@/lib/api/auth"
 import { getErrorMessage } from "@/lib/api/client"
 import { toAppError } from "@/lib/api/errors"
 import { queryKeys } from "@/lib/query/keys"
+import { getAuthStatus } from "@/lib/auth"
 import { useState, useMemo } from "react"
 import { useTranslation } from "@/i18n"
 
 export const Route = createFileRoute("/login")({
   beforeLoad: () => {
-    if (typeof window !== "undefined" && localStorage.getItem("auth_token")) {
-      // already authenticated, go to dashboard - but allow explicit login page visit
+    if (typeof window !== "undefined" && getAuthStatus() === "authenticated") {
+      throw redirect({ to: "/dashboard" })
     }
   },
   component: LoginPage,
@@ -29,7 +30,7 @@ function LoginPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const search = useRouterState({ select: (s) => s.location.search as Record<string, string> })
-  const redirect = typeof search.redirect === "string" ? search.redirect : "/dashboard"
+  const redirectTo = typeof search.redirect === "string" ? search.redirect : "/dashboard"
   const [error, setError] = useState<string | null>(null)
 
   const schema = useMemo(
@@ -50,7 +51,7 @@ function LoginPage() {
       persistAuthTokens(data)
       qc.setQueryData(queryKeys.auth.currentUser(), data.user)
       qc.invalidateQueries({ queryKey: queryKeys.auth.currentUser() })
-      navigate({ to: redirect })
+      navigate({ to: redirectTo })
     },
     onError: (err) => {
       clearAuth()

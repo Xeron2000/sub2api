@@ -18,8 +18,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { DeleteConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { queryKeys } from "@/lib/query/keys"
-import { listUsers, updateUser, deleteUser  } from "@/lib/api/users"
-import type {AdminUser} from "@/lib/api/users";
+import { listUsers, updateUser, deleteUser } from "@/lib/api/users"
+import type { AdminUser } from "@/lib/api/users"
+import { getAuthStatus, isAdmin } from "@/lib/auth"
 import { useDebouncedValue } from "@/lib/hooks/useDebounce"
 import { getAppErrorMessage } from "@/lib/api/errors"
 import { toast } from "@/lib/toast"
@@ -27,15 +28,9 @@ import { toast } from "@/lib/toast"
 export const Route = createFileRoute("/admin/users")({
   beforeLoad: () => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("auth_token")
-      if (!token) throw redirect({ to: "/login", search: { redirect: "/admin/users" } })
-      try {
-        const user = JSON.parse(localStorage.getItem("auth_user") || "null") as { role?: string } | null
-        if (user?.role !== "admin") throw redirect({ to: "/dashboard" })
-      } catch (e) {
-        if ((e as { message?: string })?.message?.includes("redirect")) throw e
-        throw redirect({ to: "/dashboard" })
-      }
+      const status = getAuthStatus()
+      if (status === "anonymous") throw redirect({ to: "/login", search: { redirect: "/admin/users" } as Record<string, string> })
+      if (status === "authenticated" && !isAdmin()) throw redirect({ to: "/dashboard" })
     }
   },
   component: AdminUsersPage,
@@ -131,24 +126,16 @@ function AdminUsersPage() {
             </div>
           </div>
 
-          <DataTable
+          <DataTable<AdminUser>
             columns={[
               { header: "ID", accessorKey: "id", align: "right" },
               { header: t("common.email"), accessorKey: "email" },
-              { header: t("common.role") !== "common.role" ? t("common.role") : "Role", cell: (r: unknown) => {
-                const row = r as AdminUser
-                return <StatusBadge status={row.role === "admin" ? "info" : "default"} label={row.role} />
-              } },
-              { header: t("common.status"), cell: (r: unknown) => {
-                const row = r as AdminUser
-                return <StatusBadge status={row.status === "active" ? "success" : "warning"} label={row.status} />
-              } },
+              { header: t("common.role") !== "common.role" ? t("common.role") : "Role", cell: (row) => <StatusBadge status={row.role === "admin" ? "info" : "default"} label={row.role} /> },
+              { header: t("common.status"), cell: (row) => <StatusBadge status={row.status === "active" ? "success" : "warning"} label={row.status} /> },
               {
                 header: t("common.actions"),
                 align: "right",
-                cell: (r: unknown) => {
-                  const row = r as AdminUser
-                  return (
+                cell: (row) => (
                     <DropdownMenu>
                       <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 hover:bg-accent hover:text-accent-foreground">{t("common.actions")}</DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -159,14 +146,13 @@ function AdminUsersPage() {
                     </DropdownMenu>
                   )
                 },
-              },
             ]}
             data={rows}
             loading={query.isLoading}
             error={errorMsg}
             onRetry={() => query.refetch()}
             emptyTitle={t("common.noData")}
-            getRowId={(r: unknown) => (r as AdminUser).id}
+            getRowId={(r) => r.id}
           />
           <DataTablePagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
         </div>

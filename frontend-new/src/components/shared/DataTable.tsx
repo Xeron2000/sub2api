@@ -5,9 +5,14 @@ import { EmptyState } from "./EmptyState"
 import { ErrorState } from "./ErrorState"
 import { useTranslation } from "@/i18n"
 
-export type DataTableColumn = { header: string; accessorKey?: string; cell?: (row: any) => ReactNode; align?: "left" | "right" }
+export type DataTableColumn<T> = {
+  header: string
+  accessorKey?: string
+  cell?: (row: T) => ReactNode
+  align?: "left" | "right"
+}
 
-export function DataTable({
+export function DataTable<T extends object>({
   columns,
   data,
   loading,
@@ -18,15 +23,15 @@ export function DataTable({
   onRetry,
   getRowId,
 }: {
-  columns: DataTableColumn[]
-  data: any[]
+  columns: DataTableColumn<T>[]
+  data: T[]
   loading?: boolean
   error?: string | null
   emptyTitle?: string
   emptyTitleKey?: string
   emptyAction?: ReactNode
   onRetry?: () => void
-  getRowId?: (row: any, index: number) => string | number
+  getRowId?: (row: T, index: number) => string | number
 }) {
   const { t } = useTranslation()
 
@@ -59,8 +64,7 @@ export function DataTable({
         </TableHeader>
         <TableBody>
           {data.map((row, ri) => {
-            const maybeId = (row as Record<string, unknown>)?.id as string | number | undefined
-            const rowId = getRowId ? getRowId(row, ri) : (maybeId ?? ri)
+            const rowId = getRowId ? getRowId(row, ri) : (((row as Record<string, unknown>).id as string | number | undefined) ?? ri)
             return (
               <TableRow key={String(rowId)} className="hover:bg-muted/50">
                 {columns.map((col, ci) => (

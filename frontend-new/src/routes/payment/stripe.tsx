@@ -19,7 +19,7 @@ function StripePage() {
       paymentAPI
         .getOrder(orderId)
         .then((res) => {
-          const data = res.data as unknown as { client_secret?: string }
+          const data = res.data as { client_secret?: string }
           if (data.client_secret) setClientSecret(data.client_secret)
           setLoaded(true)
         })

@@ -12,7 +12,7 @@ function QRCodePage() {
     queryKey: ["payment", "qrcode"],
     queryFn: async () => {
       const { data } = await paymentAPI.getCheckoutInfo()
-      const d = data as unknown as { qrcode_url?: string; url?: string }
+      const d = data as { qrcode_url?: string; url?: string }
       return { url: d.qrcode_url ?? d.url ?? "" }
     },
   })
