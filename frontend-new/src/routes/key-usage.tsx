@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { apiClient } from "@/lib/api/client"
 import { queryKeys } from "@/lib/query/keys"
+import { getKeyUsage } from "@/lib/api/usage"
 
 export const Route = createFileRoute("/key-usage")({ component: KeyUsagePage })
 
@@ -24,22 +24,12 @@ function KeyUsagePage() {
     queryKey: queryKeys.usage.list({ key: queryKey, range: dateRange }),
     queryFn: async () => {
       if (!queryKey) throw new Error("No key")
-      const params = new URLSearchParams({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })
-      if (dateRange !== "today") {
-        const days = dateRange === "7d" ? 7 : 30
-        const end = new Date().toISOString().slice(0, 10)
-        const start = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10)
-        params.set("start_date", start)
-        params.set("end_date", end)
-      }
-      const { data } = await apiClient.get(`/usage?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${queryKey}` },
-      })
-      return data as {
-        quota?: { used: number; limit: number; remaining: number }
-        usage?: { today?: { requests: number; total_tokens: number }; total?: { requests: number } }
-        model_stats?: Array<{ model: string; requests: number; total_tokens: number }>
-      }
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (dateRange === "today") return getKeyUsage(queryKey, { timezone })
+      const days = dateRange === "7d" ? 7 : 30
+      const end = new Date().toISOString().slice(0, 10)
+      const start = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10)
+      return getKeyUsage(queryKey, { start_date: start, end_date: end, timezone })
     },
     enabled: !!queryKey,
     retry: false,
@@ -81,7 +71,9 @@ function KeyUsagePage() {
             {query.isFetching ? "Querying..." : "Query"}
           </Button>
         </div>
-        <p className="mt-2 text-center text-xs text-muted-foreground">Key is sent as Bearer header, not stored. Date range affects usage query.</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Key is sent as Bearer header, not stored. Date range affects usage query.
+        </p>
 
         <div className="mt-4 flex justify-center gap-2">
           {(["today", "7d", "30d"] as const).map((r) => (

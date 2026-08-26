@@ -1,4 +1,4 @@
-import { buildGatewayUrl } from "./client"
+import { apiClient, buildGatewayUrl } from "./client"
 
 export type BatchImageStatus =
   | "queued"
@@ -253,6 +253,12 @@ export async function deleteBatchImageJobRecord(apiKey: string, batchId: string)
     headers: authHeaders(apiKey),
   })
   if (!response.ok) throw await parseBatchImageError(response)
+}
+
+// Internal Sub2API backend route (not gateway) — used by guide page to show job count
+export async function getInternalBatchImageJobs(opts?: { signal?: AbortSignal }): Promise<{ items: Array<{ id: string; status: string }> }> {
+  const { data } = await apiClient.get<{ items: Array<{ id: string; status: string }> }>("/batch-image/jobs", { signal: opts?.signal })
+  return data
 }
 
 export function saveBlob(blob: Blob, filename: string) {

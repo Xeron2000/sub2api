@@ -12,8 +12,15 @@ const publicNav: NavItem[] = [
 const userNav: NavItem[] = [
   { to: "/dashboard", labelKey: "nav.dashboard" },
   { to: "/keys", labelKey: "nav.apiKeys" },
+  { to: "/batch-image", labelKey: "nav.batchImage" },
   { to: "/usage", labelKey: "nav.usage" },
+  { to: "/available-channels", labelKey: "nav.availableChannels" },
+  { to: "/monitor", labelKey: "nav.channelStatus" },
   { to: "/subscriptions", labelKey: "nav.mySubscriptions" },
+  { to: "/purchase", labelKey: "nav.buySubscription" },
+  { to: "/orders", labelKey: "nav.myOrders" },
+  { to: "/redeem", labelKey: "nav.redeem" },
+  { to: "/affiliate", labelKey: "nav.affiliate" },
   { to: "/profile", labelKey: "nav.profile" },
 ]
 

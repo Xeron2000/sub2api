@@ -1,26 +1,34 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
+import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { getAuthStatus } from "@/lib/auth"
 import { AppShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { queryKeys } from "@/lib/query/keys"
-import { apiClient } from "@/lib/api/client"
+import { getInternalBatchImageJobs } from "@/lib/api/batchImage"
 
 export const Route = createFileRoute("/batch-image")({
   beforeLoad: ({ location }) => {
     if (location.pathname === "/docs/batch-image") throw redirect({ to: "/batch-image" })
+    if (typeof window !== "undefined" && getAuthStatus() === "anonymous") {
+      throw redirect({ to: "/login", search: { redirect: "/batch-image" } as Record<string, string> })
+    }
   },
   component: BatchImageGuide,
 })
 
 function BatchImageGuide() {
+  useEffect(() => {
+    if (getAuthStatus() === "anonymous" && typeof window !== "undefined" && window.location.pathname !== "/login" && window.location.pathname !== "/docs/batch-image") {
+      if (window.location.pathname === "/batch-image") window.location.href = `/login?redirect=${encodeURIComponent("/batch-image")}`
+    }
+  }, [])
+
   const jobsQuery = useQuery({
     queryKey: queryKeys.batchImage.list({}),
-    queryFn: async ({ signal }) => {
-      const { data } = await apiClient.get("/batch-image/jobs", { signal })
-      return data as { items: Array<{ id: string; status: string }> }
-    },
+    queryFn: ({ signal }) => getInternalBatchImageJobs({ signal }),
     enabled: typeof window !== "undefined" && !!localStorage.getItem("auth_token"),
   })
 
