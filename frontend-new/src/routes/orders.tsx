@@ -34,9 +34,9 @@ function orderStatusVariant(status: string): "success" | "warning" | "error" | "
 function OrdersPage() {
   const { t } = useTranslation()
   const query = useQuery({
-    queryKey: [...queryKeys.subscriptions.all(), "orders"] as const,
-    queryFn: async () => {
-      const { data } = await paymentAPI.getMyOrders()
+    queryKey: queryKeys.orders.list(),
+    queryFn: async ({ signal }) => {
+      const { data } = await paymentAPI.getMyOrders({}, { signal })
       const d = data as { items?: Array<{ id: string; status: string; amount: number; created_at: string }> }
       const items = d.items ?? (Array.isArray(data) ? (data as Array<{ id: string; status: string; amount: number; created_at: string }>) : [])
       return items

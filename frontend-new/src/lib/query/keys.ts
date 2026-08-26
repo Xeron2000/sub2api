@@ -56,4 +56,12 @@ export const queryKeys = {
     snapshot: (filters: Record<string, unknown> = {}) => ["monitor", "snapshot", filters] as const,
     matrix: (filters: Record<string, unknown> = {}) => ["monitor", "matrix", filters] as const,
   },
+  orders: {
+    all: () => ["orders"] as const,
+    list: (filters: Record<string, unknown> = {}) => ["orders", "list", filters] as const,
+  },
+  purchase: {
+    all: () => ["purchase"] as const,
+    plans: () => ["purchase", "plans"] as const,
+  },
 } as const

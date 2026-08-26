@@ -12,7 +12,10 @@ export type UserProfile = {
   balance?: number
   quota?: number
   created_at?: string
-  [key: string]: unknown
+  updated_at?: string | null
+  email_verified?: boolean
+  is_simple_mode?: boolean
+  status?: string
 }
 
 export async function getProfile(opts?: { signal?: AbortSignal }): Promise<UserProfile> {

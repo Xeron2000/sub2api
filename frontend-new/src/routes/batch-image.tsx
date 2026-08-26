@@ -1,13 +1,18 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "@/i18n"
 import { getAuthStatus } from "@/lib/auth"
 import { AppShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { ErrorState } from "@/components/shared/ErrorState"
+import { LoadingState } from "@/components/shared/LoadingState"
 import { queryKeys } from "@/lib/query/keys"
 import { getInternalBatchImageJobs } from "@/lib/api/batchImage"
+import { getAppErrorMessage } from "@/lib/api/errors"
 
 export const Route = createFileRoute("/batch-image")({
   beforeLoad: ({ location }) => {
@@ -20,6 +25,7 @@ export const Route = createFileRoute("/batch-image")({
 })
 
 function BatchImageGuide() {
+  const { t } = useTranslation()
   useEffect(() => {
     if (getAuthStatus() === "anonymous" && typeof window !== "undefined" && window.location.pathname !== "/login" && window.location.pathname !== "/docs/batch-image") {
       if (window.location.pathname === "/batch-image") window.location.href = `/login?redirect=${encodeURIComponent("/batch-image")}`
@@ -38,18 +44,33 @@ function BatchImageGuide() {
         <PageHeader titleKey="batchImageGuide.title" descriptionKey="batchImageGuide.description" />
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle className="text-base">Usage</CardTitle>
+            <CardTitle className="text-base">{t("batchImage.guide.uiTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Batch image generation via Gemini — create jobs with prompts, poll status, download ZIP.</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Select a Gemini API key with batch_image_generation enabled.</li>
-              <li>Create a job with prompts and model; query via queryKeys.batchImage.</li>
-              <li>Alias /docs/batch-image redirects here.</li>
-            </ul>
-            <pre className="rounded bg-muted p-3 text-xs">queryKeys.batchImage.list() / getBatchImageJob() — {jobsQuery.data?.items?.length ?? 0} jobs</pre>
+            <p>{t("batchImage.guide.step1")}</p>
+            <p>{t("batchImage.guide.step2")}</p>
+            <p>{t("batchImage.guide.step3")}</p>
+            <p>{t("batchImage.guide.step4")}</p>
           </CardContent>
         </Card>
+
+        <div className="mt-6">
+          {jobsQuery.isLoading ? (
+            <LoadingState />
+          ) : jobsQuery.isError ? (
+            <ErrorState message={getAppErrorMessage(jobsQuery.error)} onRetry={() => jobsQuery.refetch()} />
+          ) : !jobsQuery.data?.items?.length ? (
+            <EmptyState titleKey="batchImage.list.empty" descriptionKey="batchImage.list.emptyHint" />
+          ) : (
+            <Card>
+              <CardContent className="py-4">
+                <p className="text-sm text-muted-foreground">
+                  {t("batchImage.pagination.pageItems", { count: jobsQuery.data.items.length })}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </PageContainer>
     </AppShell>
   )

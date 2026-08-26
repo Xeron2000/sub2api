@@ -91,11 +91,11 @@ function DashboardPage() {
                 <StatCard titleKey="common.role" value={userQuery.data?.role ?? "-"} />
                 <StatCard
                   titleKey="keys.title"
-                  value={statsQuery.data?.total_keys != null ? String(statsQuery.data.total_keys) : "-"}
+                  value={statsQuery.data?.total_keys != null ? String(statsQuery.data.total_keys) : statsQuery.data?.total_requests != null ? String(statsQuery.data.total_requests) : "-"}
                 />
                 <StatCard
                   titleKey="nav.usage"
-                  value={statsQuery.data?.total_usage != null ? String(statsQuery.data.total_usage) : "-"}
+                  value={statsQuery.data?.total_tokens != null ? String(statsQuery.data.total_tokens) : "-"}
                 />
               </div>
               <Card>

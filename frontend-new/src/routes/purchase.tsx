@@ -27,9 +27,9 @@ export const Route = createFileRoute("/purchase")({
 function PurchasePage() {
   const { t } = useTranslation()
   const query = useQuery({
-    queryKey: [...queryKeys.subscriptions.all(), "plans"] as const,
-    queryFn: async () => {
-      const { data } = await paymentAPI.getPlans()
+    queryKey: queryKeys.purchase.plans(),
+    queryFn: async ({ signal }) => {
+      const { data } = await paymentAPI.getPlans({ signal })
       return (data as Array<{ id: number; name: string; price: number; description?: string }>) ?? []
     },
   })

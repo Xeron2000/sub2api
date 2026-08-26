@@ -35,7 +35,8 @@ export type UsageLog = {
   created_at: string
   group_id?: number | null
   billing_mode?: string | null
-  [key: string]: unknown
+  group_name?: string | null
+  api_key_name?: string | null
 }
 
 export type PaginatedUsage = { items: UsageLog[]; total: number; page: number; page_size: number }
@@ -45,7 +46,8 @@ export type UsageStatsResponse = {
   total_tokens: number
   total_cost: number
   total_actual_cost: number
-  [key: string]: unknown
+  period_start?: string | null
+  period_end?: string | null
 }
 
 export async function listUsage(params: UsageQueryParams, opts?: { signal?: AbortSignal }): Promise<PaginatedUsage> {
@@ -66,9 +68,18 @@ export type KeyUsageResponse = {
   model_stats?: Array<{ model: string; requests: number; total_tokens: number }>
 }
 
-export async function getDashboardStats(opts?: { signal?: AbortSignal }): Promise<{ total_requests?: number; total_tokens?: number; total_cost?: number; total_actual_cost?: number } & Record<string, unknown>> {
-  const { data } = await apiClient.get("/usage/dashboard/stats", { signal: opts?.signal })
-  return data as { total_requests?: number; total_tokens?: number; total_cost?: number; total_actual_cost?: number } & Record<string, unknown>
+export type DashboardStatsResponse = {
+  total_requests?: number
+  total_tokens?: number
+  total_cost?: number
+  total_actual_cost?: number
+  total_keys?: number
+  active_keys?: number
+}
+
+export async function getDashboardStats(opts?: { signal?: AbortSignal }): Promise<DashboardStatsResponse> {
+  const { data } = await apiClient.get<DashboardStatsResponse>("/usage/dashboard/stats", { signal: opts?.signal })
+  return data
 }
 
 export async function getKeyUsage(apiKey: string, params?: { start_date?: string; end_date?: string; timezone?: string }): Promise<KeyUsageResponse> {

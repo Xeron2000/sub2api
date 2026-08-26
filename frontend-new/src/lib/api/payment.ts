@@ -4,8 +4,8 @@ export const paymentAPI = {
   getConfig() {
     return apiClient.get("/payment/config")
   },
-  getPlans() {
-    return apiClient.get("/payment/plans")
+  getPlans(opts?: { signal?: AbortSignal }) {
+    return apiClient.get("/payment/plans", { signal: opts?.signal })
   },
   getCheckoutInfo() {
     return apiClient.get("/payment/checkout-info")
@@ -16,8 +16,8 @@ export const paymentAPI = {
   createOrder(data: unknown) {
     return apiClient.post("/payment/orders", data)
   },
-  getMyOrders(params?: Record<string, unknown>) {
-    return apiClient.get("/payment/orders/my", { params })
+  getMyOrders(params?: Record<string, unknown>, opts?: { signal?: AbortSignal }) {
+    return apiClient.get("/payment/orders/my", { params, signal: opts?.signal })
   },
   getOrder(id: number | string) {
     return apiClient.get(`/payment/orders/${id}`)
