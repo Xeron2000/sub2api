@@ -114,7 +114,7 @@ function AdminSubscriptionsPage() {
                 ),
               },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load subscriptions" : null}
             onRetry={() => query.refetch()}

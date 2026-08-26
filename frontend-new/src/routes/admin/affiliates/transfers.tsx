@@ -31,7 +31,7 @@ function TransfersPage() {
               { header: "Amount", accessorKey: "amount", align: "right" },
               { header: "Date", accessorKey: "created_at" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load transfers" : null}
             onRetry={() => query.refetch()}

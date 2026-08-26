@@ -5,6 +5,8 @@ import viteReact from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 
 const config = defineConfig({
+  // @ts-expect-error vitest types
+  test: { environment: "jsdom", globals: true, exclude: ["e2e/**", "node_modules/**", "dist/**"] },
   resolve: { tsconfigPaths: true },
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
   server: {

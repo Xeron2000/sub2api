@@ -49,7 +49,7 @@ function AuditLogsPage() {
               { header: "User", accessorKey: "user" },
               { header: "Date", accessorKey: "created_at" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load audit logs" : null}
             onRetry={() => query.refetch()}

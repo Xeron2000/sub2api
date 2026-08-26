@@ -31,7 +31,7 @@ function PricingPage() {
               { header: "Name", accessorKey: "name" },
               { header: "Platform", accessorKey: "platform" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load channels" : null}
             onRetry={() => query.refetch()}

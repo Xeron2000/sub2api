@@ -61,7 +61,7 @@ function GroupsPage() {
               { header: "Rate", accessorKey: "rate_multiplier", align: "right" },
               { header: "Profit", cell: (r: { profit_control_enabled: boolean }) => (r.profit_control_enabled ? "Enabled" : "Disabled") },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load groups" : null}
             onRetry={() => query.refetch()}

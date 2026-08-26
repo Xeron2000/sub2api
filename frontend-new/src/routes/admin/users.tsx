@@ -1,7 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useTranslation } from "@/i18n"
-import { useQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 import { AppShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
 import { PageHeader } from "@/components/shared/PageHeader"
@@ -9,77 +12,180 @@ import { DataTable } from "@/components/shared/DataTable"
 import { DataTablePagination } from "@/components/shared/DataTablePagination"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/shared/StatusBadge"
+import { DeleteConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { queryKeys } from "@/lib/query/keys"
-import { apiClient } from "@/lib/api/client"
+import { listUsers, updateUser, deleteUser  } from "@/lib/api/users"
+import type {AdminUser} from "@/lib/api/users";
+import { useDebouncedValue } from "@/lib/hooks/useDebounce"
+import { getAppErrorMessage } from "@/lib/api/errors"
+import { toast } from "@/lib/toast"
 
-export const Route = createFileRoute("/admin/users")({ component: AdminUsersPage })
+export const Route = createFileRoute("/admin/users")({
+  beforeLoad: () => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("auth_token")
+      if (!token) throw redirect({ to: "/login", search: { redirect: "/admin/users" } })
+      try {
+        const user = JSON.parse(localStorage.getItem("auth_user") || "null") as { role?: string } | null
+        if (user?.role !== "admin") throw redirect({ to: "/dashboard" })
+      } catch (e) {
+        if ((e as { message?: string })?.message?.includes("redirect")) throw e
+        throw redirect({ to: "/dashboard" })
+      }
+    }
+  },
+  component: AdminUsersPage,
+})
 
-type UserRow = { id: number; email: string; role: string; status: string }
+function UserForm({
+  defaultValues,
+  onSubmit,
+  onCancel,
+  submitting,
+  error,
+}: {
+  defaultValues?: { email: string }
+  onSubmit: (v: { email: string }) => void
+  onCancel: () => void
+  submitting?: boolean
+  error?: string | null
+}) {
+  const { t } = useTranslation()
+  const schema = z.object({ email: z.string().email(t("common.invalidEmail")) })
+  type FormData = z.infer<typeof schema>
+  const form = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { email: defaultValues?.email ?? "" } })
+  useEffect(() => { if (defaultValues) form.reset({ email: defaultValues.email }) }, [defaultValues, form])
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <div className="space-y-2">
+        <Label htmlFor="user-email">{t("common.email")}</Label>
+        <Input id="user-email" {...form.register("email")} aria-invalid={!!form.formState.errors.email} />
+        {form.formState.errors.email && <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>}
+        {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>{t("common.cancel")}</Button>
+        <Button type="submit" disabled={submitting} aria-busy={submitting}>{submitting ? t("common.saving") : t("common.confirm")}</Button>
+      </DialogFooter>
+    </form>
+  )
+}
 
 function AdminUsersPage() {
   const { t } = useTranslation()
+  const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
+  const debounced = useDebouncedValue(search, 300)
   const pageSize = 10
+  const [editRow, setEditRow] = useState<AdminUser | null>(null)
+  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+
+  useEffect(() => setPage(1), [debounced])
 
   const query = useQuery({
-    queryKey: queryKeys.users.list({ page, search }),
-    queryFn: async () => {
-      const { data } = await apiClient.get("/admin/users", { params: { page, page_size: pageSize, search: search || undefined } }).catch(() => ({ data: { items: [], total: 0 } }))
-      return data as { items: UserRow[]; total: number }
-    },
+    queryKey: queryKeys.users.list({ page, search: debounced }),
+    queryFn: ({ signal }) => listUsers({ page, page_size: pageSize, search: debounced || undefined }, { signal }),
   })
 
-  const rows: UserRow[] = (query.data as { items: UserRow[] })?.items ?? []
-  const total: number = (query.data as { total: number })?.total ?? rows.length
+  const updateMut = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) => updateUser(id, payload),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.users.all() }); setEditRow(null); setFormError(null); toast.success(t("common.saved")) },
+    onError: (err) => setFormError(getAppErrorMessage(err)),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => deleteUser(id),
+    onSuccess: () => {
+      const total = (query.data?.total ?? 0) - 1
+      const pages = Math.max(1, Math.ceil(total / pageSize))
+      if (page > pages) setPage(pages)
+      qc.invalidateQueries({ queryKey: queryKeys.users.all() })
+      setDeleteId(null)
+      toast.success(t("common.deleted"))
+    },
+    onError: (err) => toast.error(getAppErrorMessage(err)),
+  })
+
+  const rows: AdminUser[] = (query.data?.items) ?? []
+  const total = query.data?.total ?? rows.length
+  const errorMsg = query.error ? getAppErrorMessage(query.error) : null
+  const deleteRow = deleteId != null ? rows.find((r) => r.id === deleteId) : null
 
   return (
     <AppShell>
       <PageContainer>
-        <PageHeader titleKey="admin.users.title" />
+        <PageHeader title={t("admin.users.title") !== "admin.users.title" ? t("admin.users.title") : "Users"} />
         <div className="mt-6 space-y-4">
-          <div className="flex gap-2">
-            <Input placeholder={t("common.searchPlaceholder")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="max-w-sm" />
-            <Button variant="ghost" onClick={() => { setSearch(""); setPage(1) }}>
-              Clear filters
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input placeholder={t("common.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" aria-label={t("common.search")} />
+            <Button variant="ghost" onClick={() => setSearch("")}>{t("common.reset")}</Button>
             <div className="ml-auto flex gap-2">
-              <Button variant="outline" onClick={() => query.refetch()}>
-                Refresh
-              </Button>
-              <Button>{t("common.create")}</Button>
+              <Button variant="outline" onClick={() => query.refetch()}>{t("common.refresh")}</Button>
+              <Button onClick={() => toast.info("Create user: backend support pending")}>{t("common.create")}</Button>
             </div>
           </div>
+
           <DataTable
             columns={[
               { header: "ID", accessorKey: "id", align: "right" },
-              { header: "Email", accessorKey: "email" },
-              { header: "Role", cell: (r: UserRow) => <StatusBadge status={r.role === "admin" ? "info" : "default"} label={r.role} /> },
-              { header: "Status", cell: (r: UserRow) => <StatusBadge status={r.status === "active" ? "success" : "warning"} label={r.status} /> },
+              { header: t("common.email"), accessorKey: "email" },
+              { header: t("common.role") !== "common.role" ? t("common.role") : "Role", cell: (r: unknown) => {
+                const row = r as AdminUser
+                return <StatusBadge status={row.role === "admin" ? "info" : "default"} label={row.role} />
+              } },
+              { header: t("common.status"), cell: (r: unknown) => {
+                const row = r as AdminUser
+                return <StatusBadge status={row.status === "active" ? "success" : "warning"} label={row.status} />
+              } },
               {
-                header: "Actions",
+                header: t("common.actions"),
                 align: "right",
-                cell: () => (
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="sm">
-                      Edit
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      Disable
-                    </Button>
-                  </div>
-                ),
+                cell: (r: unknown) => {
+                  const row = r as AdminUser
+                  return (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 hover:bg-accent hover:text-accent-foreground">{t("common.actions")}</DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setFormError(null); setEditRow(row) }}>{t("common.edit")}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => updateMut.mutate({ id: row.id, payload: { status: row.status === "active" ? "inactive" : "active" } })}>{row.status === "active" ? t("common.disabled") : t("common.enabled")}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDeleteId(row.id)}>{t("common.delete")}</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )
+                },
               },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
-            error={query.error ? (query.error as { message?: string }).message ?? "Failed" : null}
+            error={errorMsg}
             onRetry={() => query.refetch()}
-            emptyTitle="No users"
+            emptyTitle={t("common.noData")}
+            getRowId={(r: unknown) => (r as AdminUser).id}
           />
           <DataTablePagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
         </div>
+
+        <Dialog open={!!editRow} onOpenChange={(o) => { if (!o) { setEditRow(null); setFormError(null) } }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{t("common.edit")}</DialogTitle></DialogHeader>
+            {editRow ? <UserForm defaultValues={{ email: editRow.email }} onSubmit={(v) => { setFormError(null); updateMut.mutate({ id: editRow.id, payload: { email: v.email } }) }} onCancel={() => setEditRow(null)} submitting={updateMut.isPending} error={formError} /> : null}
+          </DialogContent>
+        </Dialog>
+
+        <DeleteConfirmDialog
+          open={deleteId != null}
+          onOpenChange={(o) => { if (!o) setDeleteId(null) }}
+          title={t("common.delete")}
+          description={deleteRow ? `Delete ${deleteRow.email} (ID ${deleteRow.id})? This cannot be undone.` : "Delete this user? This cannot be undone."}
+          onConfirm={() => { if (deleteId != null) deleteMut.mutate(deleteId) }}
+          loading={deleteMut.isPending}
+        />
       </PageContainer>
     </AppShell>
   )

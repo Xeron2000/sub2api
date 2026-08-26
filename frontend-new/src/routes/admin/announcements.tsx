@@ -81,7 +81,7 @@ function AnnouncementsPage() {
                 ),
               },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load announcements" : null}
             onRetry={() => query.refetch()}

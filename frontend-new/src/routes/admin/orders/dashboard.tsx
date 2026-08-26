@@ -13,7 +13,7 @@ function OrdersDashboardPage() {
     queryKey: ["admin", "orders", "dashboard"],
     queryFn: async () => {
       const { data } = await adminPaymentAPI.getDashboard()
-      return data as unknown as { total_orders: number; total_revenue: number }
+      return data
     },
   })
 

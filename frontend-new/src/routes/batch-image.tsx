@@ -17,8 +17,8 @@ export const Route = createFileRoute("/batch-image")({
 function BatchImageGuide() {
   const jobsQuery = useQuery({
     queryKey: queryKeys.batchImage.list({}),
-    queryFn: async () => {
-      const { data } = await apiClient.get("/batch-image/jobs").catch(() => ({ data: { items: [] } }))
+    queryFn: async ({ signal }) => {
+      const { data } = await apiClient.get("/batch-image/jobs", { signal })
       return data as { items: Array<{ id: string; status: string }> }
     },
     enabled: typeof window !== "undefined" && !!localStorage.getItem("auth_token"),

@@ -14,7 +14,7 @@ function OrdersPage() {
     queryFn: async () => {
       const { data } = await adminPaymentAPI.getOrders()
       const d = data as unknown as { items?: Array<{ id: string; amount: number; status: string }> }
-      return d.items ?? (data as unknown as Array<{ id: string; amount: number; status: string }>)
+      return d.items ?? (data)
     },
   })
 
@@ -31,7 +31,7 @@ function OrdersPage() {
               { header: "Amount", accessorKey: "amount", align: "right" },
               { header: "Status", accessorKey: "status" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load orders" : null}
             onRetry={() => query.refetch()}

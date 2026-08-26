@@ -17,15 +17,15 @@ function deepMerge(target: Messages, source: Messages): Messages {
     if (v && typeof v === "object" && !Array.isArray(v) && typeof out[k] === "object" && out[k] !== null && !Array.isArray(out[k])) {
       out[k] = deepMerge(out[k] as Messages, v as Messages)
     } else {
-      out[k] = v as unknown
+      out[k] = v
     }
   }
   return out
 }
 
 const translations: Record<Locale, Messages> = {
-  en: deepMerge(en as unknown as Messages, appEn as unknown as Messages),
-  zh: deepMerge(zh as unknown as Messages, appZh as unknown as Messages),
+  en: deepMerge(en, appEn),
+  zh: deepMerge(zh, appZh),
 }
 
 function isLocale(v: string): v is Locale {

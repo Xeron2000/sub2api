@@ -24,8 +24,8 @@ function UsagePage() {
 
   const query = useQuery({
     queryKey: queryKeys.usage.list({ page, search }),
-    queryFn: async () => {
-      const { data } = await apiClient.get("/usage", { params: { page, page_size: pageSize, search: search || undefined } }).catch(() => ({ data: { items: [], total: 0 } }))
+    queryFn: async ({ signal }) => {
+      const { data } = await apiClient.get("/usage", { params: { page, page_size: pageSize, search: search || undefined }, signal })
       return data as { items: UsageRow[]; total: number }
     },
   })
@@ -51,7 +51,7 @@ function UsagePage() {
               { header: "Tokens", accessorKey: "tokens", align: "right" },
               { header: "Date", accessorKey: "created_at" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.error ? (query.error as { message?: string }).message ?? "Failed to load" : null}
             onRetry={() => query.refetch()}

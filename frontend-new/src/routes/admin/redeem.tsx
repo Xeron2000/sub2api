@@ -70,7 +70,7 @@ function RedeemPage() {
                 ),
               },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load redeem codes" : null}
             onRetry={() => query.refetch()}

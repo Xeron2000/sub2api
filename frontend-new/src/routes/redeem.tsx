@@ -46,8 +46,8 @@ function RedeemPage() {
 
   const historyQuery = useQuery({
     queryKey: queryKeys.announcements.list(), // reuse, or use redeem history
-    queryFn: async () => {
-      const { data } = await apiClient.get("/redeem/history").catch(() => ({ data: [] }))
+    queryFn: async ({ signal }) => {
+      const { data } = await apiClient.get("/redeem/history", { signal })
       return (data as Array<{ id: number; code: string; type: string; value: number; used_at: string }>) ?? []
     },
   })

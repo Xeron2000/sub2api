@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { queryClient } from "@/lib/query/client"
 import { I18nProvider } from "@/i18n"
+import { ThemeProvider } from "@/lib/theme"
 
 import appCss from "../styles.css?url"
 
@@ -20,7 +21,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "Sub2API",
       },
     ],
     links: [
@@ -46,23 +47,20 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <I18nProvider>
-          <QueryClientProvider client={queryClient}>
-            <TooltipProvider>{children}</TooltipProvider>
-          </QueryClientProvider>
-          <TanStackDevtools
-            config={{
-              position: "bottom-right",
-            }}
-            plugins={[
-              {
-                name: "Tanstack Router",
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
+        <ThemeProvider>
+          <I18nProvider>
+            <QueryClientProvider client={queryClient}>
+              <TooltipProvider>{children}</TooltipProvider>
+            </QueryClientProvider>
+          {import.meta.env.DEV ? (
+            <TanStackDevtools
+              config={{ position: "bottom-right" }}
+              plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}
+            />
+          ) : null}
           <Scripts />
-        </I18nProvider>
+          </I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

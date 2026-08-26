@@ -44,7 +44,7 @@ function AdminUsagePage() {
               { header: "Model", accessorKey: "model" },
               { header: "Tokens", accessorKey: "tokens", align: "right" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load usage" : null}
             onRetry={() => query.refetch()}

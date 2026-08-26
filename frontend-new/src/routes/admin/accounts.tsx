@@ -20,7 +20,7 @@ function AccountsPage() {
     queryFn: async () => {
       const { data } = await accountsAPI.list({ search: search || undefined })
       const d = data as unknown as { items?: Array<{ id: number; email: string; status: string }> }
-      return d.items ?? (data as unknown as Array<{ id: number; email: string; status: string }>)
+      return d.items ?? (data)
     },
   })
 
@@ -43,7 +43,7 @@ function AccountsPage() {
               { header: "Email", accessorKey: "email" },
               { header: "Status", accessorKey: "status" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load accounts" : null}
             onRetry={() => query.refetch()}

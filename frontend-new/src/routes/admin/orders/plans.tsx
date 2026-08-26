@@ -54,7 +54,7 @@ function PlansPage() {
     queryFn: async () => {
       const { data } = await adminPaymentAPI.getPlans()
       const d = data as unknown as { items?: Array<{ id: number; name: string; price: number }> }
-      return d.items ?? (data as unknown as Array<{ id: number; name: string; price: number }>)
+      return d.items ?? (data)
     },
   })
 
@@ -76,7 +76,7 @@ function PlansPage() {
               { header: "Name", accessorKey: "name" },
               { header: "Price", accessorKey: "price", align: "right" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load plans" : null}
             onRetry={() => query.refetch()}

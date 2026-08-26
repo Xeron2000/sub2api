@@ -11,8 +11,8 @@ export const Route = createFileRoute("/monitor")({ component: MonitorPage })
 function MonitorPage() {
   const query = useQuery({
     queryKey: ["channelMonitor", "status"],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/monitor/status").catch(() => ({ data: { channels: [] } }))
+    queryFn: async ({ signal }) => {
+      const { data } = await apiClient.get("/monitor/status", { signal })
       return data as { channels: Array<{ id: number; name: string; status: string; latency: number }> }
     },
   })
@@ -30,7 +30,7 @@ function MonitorPage() {
               { header: "Status", accessorKey: "status" },
               { header: "Latency (ms)", accessorKey: "latency", align: "right" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load" : null}
             onRetry={() => query.refetch()}

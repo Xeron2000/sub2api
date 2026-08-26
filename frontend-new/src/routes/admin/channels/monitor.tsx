@@ -31,7 +31,7 @@ function MonitorPage() {
               { header: "Name", accessorKey: "name" },
               { header: "Status", accessorKey: "status" },
             ]}
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
             loading={query.isLoading}
             error={query.isError ? "Failed to load monitors" : null}
             onRetry={() => query.refetch()}

@@ -14,7 +14,7 @@ function PurchasePage() {
     queryKey: ["purchase", "plans"],
     queryFn: async () => {
       const { data } = await paymentAPI.getPlans()
-      return data as unknown as Array<{ id: number; name: string; price: number }>
+      return data as Array<{ id: number; name: string; price: number }>
     },
   })
 
@@ -26,7 +26,7 @@ function PurchasePage() {
           {query.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading plans...</p>
           ) : query.data?.length ? (
-            query.data.map((plan) => (
+            query.data.map((plan: { id: number; name: string; price: number }) => (
               <Card key={plan.id}>
                 <CardHeader>
                   <CardTitle className="text-base">{plan.name}</CardTitle>

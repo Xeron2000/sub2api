@@ -5,9 +5,9 @@ import { EmptyState } from "./EmptyState"
 import { ErrorState } from "./ErrorState"
 import { useTranslation } from "@/i18n"
 
-type Column = { header: string; accessorKey?: string; cell?: (row: any) => ReactNode; align?: "left" | "right" }
+export type DataTableColumn = { header: string; accessorKey?: string; cell?: (row: any) => ReactNode; align?: "left" | "right" }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable({
   columns,
   data,
   loading,
@@ -16,19 +16,23 @@ export function DataTable<T extends Record<string, any>>({
   emptyTitleKey,
   emptyAction,
   onRetry,
+  getRowId,
 }: {
-  columns: Column[]
-  data: T[]
+  columns: DataTableColumn[]
+  data: any[]
   loading?: boolean
   error?: string | null
   emptyTitle?: string
   emptyTitleKey?: string
   emptyAction?: ReactNode
   onRetry?: () => void
+  getRowId?: (row: any, index: number) => string | number
 }) {
+  const { t } = useTranslation()
+
   if (loading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2" aria-busy>
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full" />
         ))}
@@ -36,14 +40,13 @@ export function DataTable<T extends Record<string, any>>({
     )
   }
   if (error) return <ErrorState message={error} onRetry={onRetry} />
-  const { t } = useTranslation()
   if (data.length === 0) {
     if (emptyTitleKey) return <EmptyState titleKey={emptyTitleKey} action={emptyAction} />
     return <EmptyState title={emptyTitle ?? t("common.noData")} action={emptyAction} />
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -55,15 +58,19 @@ export function DataTable<T extends Record<string, any>>({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row, ri) => (
-            <TableRow key={ri} className="hover:bg-muted/50">
-              {columns.map((col, ci) => (
-                <TableCell key={ci} className={col.align === "right" ? "text-right" : "text-left"}>
-                  {col.cell ? col.cell(row) : (row[col.accessorKey as string] as ReactNode)}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
+          {data.map((row, ri) => {
+            const maybeId = (row as Record<string, unknown>)?.id as string | number | undefined
+            const rowId = getRowId ? getRowId(row, ri) : (maybeId ?? ri)
+            return (
+              <TableRow key={String(rowId)} className="hover:bg-muted/50">
+                {columns.map((col, ci) => (
+                  <TableCell key={ci} className={col.align === "right" ? "text-right" : "text-left"}>
+                    {col.cell ? col.cell(row) : col.accessorKey ? String((row as Record<string, unknown>)[col.accessorKey] ?? "") : null}
+                  </TableCell>
+                ))}
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>
