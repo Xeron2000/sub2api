@@ -14,6 +14,7 @@ import { listUsage } from "@/lib/api/admin/usage"
 import { createAdminGuard } from "@/lib/guard/adminGuard"
 import { getAppErrorMessage } from "@/lib/api/errors"
 import { useDebouncedValue } from "@/lib/hooks/useDebounce"
+import { formatDateTime, formatTokens } from "@/lib/format"
 
 export const Route = createFileRoute("/admin/usage")({
   beforeLoad: createAdminGuard(),
@@ -35,7 +36,7 @@ function AdminUsagePage() {
   })
 
   const raw = query.data as { items?: Array<Record<string, unknown>>; total?: number } | undefined
-  const rows = (raw?.items ?? []) as Array<{ id: number; user: string; model: string; tokens: number }>
+  const rows = (raw?.items ?? []) as Array<{ id: number; user: string; user_email?: string; model: string; tokens: number; tokens_used?: number; created_at?: string; provider?: string }>
   const total = raw?.total ?? rows.length
 
   return (
@@ -57,9 +58,10 @@ function AdminUsagePage() {
           <DataTable
             columns={[
               { header: "ID", accessorKey: "id", align: "right" },
-              { header: t("admin.usage.user") ?? "User", accessorKey: "user" },
+              { header: t("admin.usage.user") ?? "User", accessorKey: "user", cell: (r) => (r.user_email as string) || (r.user as string) || "-" },
               { header: t("admin.usage.model") ?? "Model", accessorKey: "model" },
-              { header: t("admin.usage.tokens") ?? "Tokens", accessorKey: "tokens", align: "right" },
+              { header: t("admin.usage.tokens") ?? "Tokens", accessorKey: "tokens", align: "right", cell: (r) => formatTokens((r.tokens ?? r.tokens_used) as number) },
+              { header: t("admin.usage.time") ?? "Time", accessorKey: "created_at", cell: (r) => formatDateTime((r.created_at as string) || undefined) },
             ]}
             data={rows}
             loading={query.isLoading}

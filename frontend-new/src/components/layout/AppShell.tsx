@@ -6,6 +6,7 @@ import { AppSidebar } from "./AppSidebar"
 import { useTranslation } from "@/i18n"
 import { getRouteMeta } from "@/lib/routeMeta"
 import { getAuthStatus, isAdmin } from "@/lib/auth"
+import { AdminComplianceDialog } from "@/components/admin/AdminComplianceDialog"
 
 function useDocumentTitle() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -57,6 +58,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <AppHeader />
         <main className="flex-1 bg-muted/20">{children}</main>
       </div>
+      <AdminComplianceDialog />
     </div>
   )
 }

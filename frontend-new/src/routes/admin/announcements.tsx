@@ -28,12 +28,14 @@ export const Route = createFileRoute("/admin/announcements")({
 
 function AnnouncementForm({
   defaultTitle,
+  defaultContent,
   onSubmit,
   onCancel,
   submitting,
   error,
 }: {
   defaultTitle?: string
+  defaultContent?: string
   onSubmit: (v: { title: string; content: string }) => void
   onCancel: () => void
   submitting?: boolean
@@ -47,9 +49,9 @@ function AnnouncementForm({
   type FormData = z.infer<typeof schema>
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { title: defaultTitle ?? "", content: "" },
+    defaultValues: { title: defaultTitle ?? "", content: defaultContent ?? "" },
   })
-  useEffect(() => { if (defaultTitle !== undefined) form.reset({ title: defaultTitle, content: "" }) }, [defaultTitle, form])
+  useEffect(() => { if (defaultTitle !== undefined || defaultContent !== undefined) form.reset({ title: defaultTitle ?? "", content: defaultContent ?? "" }) }, [defaultTitle, defaultContent, form])
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-2">
@@ -71,12 +73,15 @@ function AnnouncementForm({
   )
 }
 
+type AnnRow = { id: number; title: string; content?: string; status?: string }
+
 function AnnouncementsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [search, setSearch] = useState("")
   const debounced = useDebouncedValue(search, 300)
   const [createOpen, setCreateOpen] = useState(false)
+  const [editRow, setEditRow] = useState<AnnRow | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -103,10 +108,18 @@ function AnnouncementsPage() {
     onError: (err) => toast.error(getAppErrorMessage(err)),
   })
 
-  type AnnRow = { id: number; title: string; content?: string; status?: string }
   const raw = query.data as { items?: AnnRow[]; total?: number } | undefined
   const rows: AnnRow[] = raw?.items ?? (Array.isArray(query.data) ? (query.data as AnnRow[]) : [])
   const deleteRow = deleteId != null ? rows.find((r) => r.id === deleteId) : null
+
+  const updateMut = useMutation({
+    mutationFn: async (data: { id: number; title: string; content: string }) => announcementsAPI.update(data.id, { title: data.title, content: data.content }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.admin.announcements.all() })
+      setEditRow(null); setFormError(null); toast.success(t("common.saved"))
+    },
+    onError: (err) => setFormError(getAppErrorMessage(err)),
+  })
 
   return (
     <AdminShell>
@@ -130,7 +143,10 @@ function AnnouncementsPage() {
                 header: t("common.actions"),
                 align: "right",
                 cell: (r) => (
-                  <Button variant="ghost" size="sm" onClick={() => setDeleteId(r.id)}>{t("common.delete")}</Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => { setFormError(null); setEditRow(r) }}>{t("common.edit")}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteId(r.id)}>{t("common.delete")}</Button>
+                  </div>
                 ),
               },
             ]}
@@ -147,6 +163,13 @@ function AnnouncementsPage() {
           <DialogContent>
             <DialogHeader><DialogTitle>{t("common.create")}</DialogTitle></DialogHeader>
             <AnnouncementForm onSubmit={(v) => { setFormError(null); createMut.mutate(v) }} onCancel={() => setCreateOpen(false)} submitting={createMut.isPending} error={formError} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!editRow} onOpenChange={(o) => { if (!o) { setEditRow(null); setFormError(null) } }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{t("common.edit")}</DialogTitle></DialogHeader>
+            {editRow ? <AnnouncementForm defaultTitle={editRow.title} defaultContent={editRow.content ?? ""} onSubmit={(v) => { setFormError(null); updateMut.mutate({ id: editRow.id, ...v }) }} onCancel={() => setEditRow(null)} submitting={updateMut.isPending} error={formError} /> : null}
           </DialogContent>
         </Dialog>
 

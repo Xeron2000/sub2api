@@ -3,6 +3,7 @@ import { useTranslation } from "@/i18n"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
+import type { SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { AdminShell } from "@/components/layout/AppShell"
@@ -23,6 +24,8 @@ import { getAppErrorMessage } from "@/lib/api/errors"
 import { useDebouncedValue } from "@/lib/hooks/useDebounce"
 import { toast } from "@/lib/toast"
 
+type RedeemFormValues = { count: number; value: number }
+
 export const Route = createFileRoute("/admin/redeem")({
   beforeLoad: createAdminGuard({ blockSimpleMode: true }),
   component: RedeemPage,
@@ -30,16 +33,17 @@ export const Route = createFileRoute("/admin/redeem")({
 
 function RedeemForm({
   onSubmit, onCancel, submitting, error,
-}: { onSubmit: (v: { count: number; value: number }) => void; onCancel: () => void; submitting?: boolean; error?: string | null }) {
+}: { onSubmit: SubmitHandler<RedeemFormValues>; onCancel: () => void; submitting?: boolean; error?: string | null }) {
   const { t } = useTranslation()
   const schema = z.object({
     count: z.coerce.number().int().min(1).max(100),
     value: z.coerce.number().min(0),
   })
-  type FormData = z.infer<typeof schema>
-  const form = useForm<FormData>({ resolver: zodResolver(schema) as unknown as never, defaultValues: { count: 1, value: 10 } })
+  // @ts-ignore zodResolver coerce
+  const form = useForm<RedeemFormValues>({ resolver: zodResolver(schema), defaultValues: { count: 1, value: 10 } })
   return (
-    <form onSubmit={form.handleSubmit(onSubmit as never)} className="space-y-4" noValidate>
+  // @ts-ignore - handleSubmit generic
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="redeem-count">{t("admin.redeem.count") ?? "Count"}</Label>
         <Input id="redeem-count" type="number" {...form.register("count")} aria-invalid={!!form.formState.errors.count} />

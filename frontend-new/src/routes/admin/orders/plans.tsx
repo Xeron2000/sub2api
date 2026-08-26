@@ -3,6 +3,7 @@ import { useTranslation } from "@/i18n"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
+import type { SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { AdminShell } from "@/components/layout/AppShell"
@@ -21,6 +22,8 @@ import { createAdminGuard } from "@/lib/guard/adminGuard"
 import { getAppErrorMessage } from "@/lib/api/errors"
 import { toast } from "@/lib/toast"
 
+type PlanFormValues = { name: string; price: number }
+
 export const Route = createFileRoute("/admin/orders/plans")({
   beforeLoad: createAdminGuard({ requirePayment: true }),
   component: PlansPage,
@@ -28,14 +31,15 @@ export const Route = createFileRoute("/admin/orders/plans")({
 
 type PlanRow = { id: number; name: string; price: number; status?: string }
 
-function PlanForm({ defaultValues, onSubmit, onCancel, submitting, error }: { defaultValues?: { name: string; price: number }; onSubmit: (v: { name: string; price: number }) => void; onCancel: () => void; submitting?: boolean; error?: string | null }) {
+function PlanForm({ defaultValues, onSubmit, onCancel, submitting, error }: { defaultValues?: { name: string; price: number }; onSubmit: SubmitHandler<PlanFormValues>; onCancel: () => void; submitting?: boolean; error?: string | null }) {
   const { t } = useTranslation()
   const schema = z.object({ name: z.string().min(1, t("common.required") ?? "Required"), price: z.coerce.number().min(0) })
-  type FormData = z.infer<typeof schema>
-  const form = useForm<FormData>({ resolver: zodResolver(schema) as unknown as never, defaultValues: { name: defaultValues?.name ?? "", price: defaultValues?.price ?? 0 } })
+  // @ts-ignore zodResolver coerce
+  const form = useForm<PlanFormValues>({ resolver: zodResolver(schema), defaultValues: { name: defaultValues?.name ?? "", price: defaultValues?.price ?? 0 } })
   useEffect(() => { if (defaultValues) form.reset(defaultValues) }, [defaultValues, form])
   return (
-    <form onSubmit={form.handleSubmit(onSubmit as never)} className="space-y-4" noValidate>
+  // @ts-ignore - handleSubmit generic
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="plan-name">{t("common.name")}</Label>
         <Input id="plan-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
@@ -84,7 +88,7 @@ function PlansPage() {
     onError: (err) => toast.error(getAppErrorMessage(err)),
   })
 
-  const raw = query.data as unknown as PlanRow[] | { items?: PlanRow[] }
+  const raw = query.data as PlanRow[] | { items?: PlanRow[] } | undefined
   const rows: PlanRow[] = Array.isArray(raw) ? raw : (raw as { items?: PlanRow[] })?.items ?? []
   const deleteRow = deleteId != null ? rows.find((r) => r.id === deleteId) : null
 

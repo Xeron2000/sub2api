@@ -45,6 +45,28 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 apiClient.interceptors.response.use(
   (res: AxiosResponse) => {
     const data = res.data as Record<string, unknown> | null
+    // cache ops enabled on success (clear disabled flag)
+    try {
+      const url = String(res.config?.url || "")
+      if (url.includes("/admin/ops/overview") && res.status >= 200 && res.status < 300) {
+        localStorage.setItem("ops_monitoring_enabled_cached", "true")
+      }
+      // cache payment/risk from successful settings fetch
+      if (url.includes("/admin/settings") && res.status >= 200 && res.status < 300) {
+        const payload = data && typeof data === "object" && "data" in data ? (data as ApiEnvelope<Record<string, unknown>>).data : data as Record<string, unknown> | null
+        if (payload && typeof payload === "object") {
+          if (typeof payload.payment_enabled === "boolean") localStorage.setItem("payment_enabled_cached", String(payload.payment_enabled))
+          if (typeof payload.risk_control_enabled === "boolean") localStorage.setItem("risk_control_enabled_cached", String(payload.risk_control_enabled))
+          if (typeof payload.ops_monitoring_enabled === "boolean") localStorage.setItem("ops_monitoring_enabled_cached", String(payload.ops_monitoring_enabled))
+        } else if (data && typeof data === "object" && "payment_enabled" in data) {
+          // already unwrapped case
+          const d = data as Record<string, unknown>
+          if (typeof d.payment_enabled === "boolean") localStorage.setItem("payment_enabled_cached", String(d.payment_enabled))
+          if (typeof d.risk_control_enabled === "boolean") localStorage.setItem("risk_control_enabled_cached", String(d.risk_control_enabled))
+          if (typeof d.ops_monitoring_enabled === "boolean") localStorage.setItem("ops_monitoring_enabled_cached", String(d.ops_monitoring_enabled))
+        }
+      }
+    } catch {}
     if (data && typeof data === "object" && "code" in data) {
       const envelope = data as ApiEnvelope<unknown>
       if (envelope.code === 0) {

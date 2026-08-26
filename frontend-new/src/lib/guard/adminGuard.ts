@@ -1,5 +1,5 @@
 import { redirect } from "@tanstack/react-router"
-import { getAuthStatus, isAdmin, getStoredUser } from "@/lib/auth"
+import { getAuthStatus, isAdmin, getIsSimpleMode } from "@/lib/auth"
 
 export type GuardOptions = {
   requirePayment?: boolean
@@ -27,8 +27,7 @@ export function createAdminGuard(options: GuardOptions = {}) {
       throw redirect({ to: "/dashboard" })
     }
     if (options.blockSimpleMode) {
-      const u = getStoredUser() as unknown as { is_simple_mode?: boolean } | null
-      if (u?.is_simple_mode) {
+      if (getIsSimpleMode()) {
         throw redirect({ to: options.simpleModeRedirect ?? "/admin/dashboard" })
       }
     }

@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { useTranslation } from "@/i18n"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
@@ -20,19 +20,13 @@ import { DeleteConfirmDialog } from "@/components/shared/ConfirmDialog"
 import { queryKeys } from "@/lib/query/keys"
 import { listUsers, updateUser, deleteUser } from "@/lib/api/users"
 import type { AdminUser } from "@/lib/api/users"
-import { getAuthStatus, isAdmin } from "@/lib/auth"
+import { createAdminGuard } from "@/lib/guard/adminGuard"
 import { useDebouncedValue } from "@/lib/hooks/useDebounce"
 import { getAppErrorMessage } from "@/lib/api/errors"
 import { toast } from "@/lib/toast"
 
 export const Route = createFileRoute("/admin/users")({
-  beforeLoad: () => {
-    if (typeof window !== "undefined") {
-      const status = getAuthStatus()
-      if (status === "anonymous") throw redirect({ to: "/login", search: { redirect: "/admin/users" } as Record<string, string> })
-      if (status === "authenticated" && !isAdmin()) throw redirect({ to: "/dashboard" })
-    }
-  },
+  beforeLoad: createAdminGuard(),
   component: AdminUsersPage,
 })
 

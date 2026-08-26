@@ -3,6 +3,7 @@ import { useTranslation } from "@/i18n"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
+import type { SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { AdminShell } from "@/components/layout/AppShell"
@@ -22,18 +23,21 @@ import { getAppErrorMessage } from "@/lib/api/errors"
 import { useDebouncedValue } from "@/lib/hooks/useDebounce"
 import { toast } from "@/lib/toast"
 
+type ProxyFormValues = { name: string; host: string; port: number }
+
 export const Route = createFileRoute("/admin/proxies")({
   beforeLoad: createAdminGuard(),
   component: ProxiesPage,
 })
 
-function ProxyForm({ onSubmit, onCancel, submitting, error }: { onSubmit: (v: { name: string; host: string; port: number }) => void; onCancel: () => void; submitting?: boolean; error?: string | null }) {
+function ProxyForm({ onSubmit, onCancel, submitting, error }: { onSubmit: SubmitHandler<ProxyFormValues>; onCancel: () => void; submitting?: boolean; error?: string | null }) {
   const { t } = useTranslation()
   const schema = z.object({ name: z.string().min(1, t("common.required") ?? "Required"), host: z.string().min(1), port: z.coerce.number().int().min(1).max(65535) })
-  type FormData = z.infer<typeof schema>
-  const form = useForm<FormData>({ resolver: zodResolver(schema) as unknown as never, defaultValues: { name: "", host: "", port: 8080 } })
+  // @ts-ignore zodResolver coerce
+  const form = useForm<ProxyFormValues>({ resolver: zodResolver(schema), defaultValues: { name: "", host: "", port: 8080 } })
   return (
-    <form onSubmit={form.handleSubmit(onSubmit as never)} className="space-y-4" noValidate>
+    // @ts-ignore - handleSubmit generic
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="proxy-name">{t("common.name")}</Label>
         <Input id="proxy-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />

@@ -3,6 +3,7 @@ import { useTranslation } from "@/i18n"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
+import type { SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { AdminShell } from "@/components/layout/AppShell"
@@ -22,6 +23,8 @@ import { getAppErrorMessage } from "@/lib/api/errors"
 import { useDebouncedValue } from "@/lib/hooks/useDebounce"
 import { toast } from "@/lib/toast"
 
+type PromoFormValues = { code: string; discount: number }
+
 export const Route = createFileRoute("/admin/promo-codes")({
   beforeLoad: createAdminGuard(),
   component: PromoCodesPage,
@@ -29,16 +32,17 @@ export const Route = createFileRoute("/admin/promo-codes")({
 
 function PromoForm({
   onSubmit, onCancel, submitting, error,
-}: { onSubmit: (v: { code: string; discount: number }) => void; onCancel: () => void; submitting?: boolean; error?: string | null }) {
+}: { onSubmit: SubmitHandler<PromoFormValues>; onCancel: () => void; submitting?: boolean; error?: string | null }) {
   const { t } = useTranslation()
   const schema = z.object({
     code: z.string().min(1, t("common.required") ?? "Required"),
     discount: z.coerce.number().min(0).max(100),
   })
-  type FormData = z.infer<typeof schema>
-  const form = useForm<FormData>({ resolver: zodResolver(schema) as unknown as never, defaultValues: { code: "", discount: 10 } })
+  // @ts-ignore zodResolver coerce
+  const form = useForm<PromoFormValues>({ resolver: zodResolver(schema), defaultValues: { code: "", discount: 10 } })
   return (
-    <form onSubmit={form.handleSubmit(onSubmit as never)} className="space-y-4" noValidate>
+  // @ts-ignore - handleSubmit generic
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="promo-code">{t("admin.promo.code") ?? "Code"}</Label>
         <Input id="promo-code" {...form.register("code")} aria-invalid={!!form.formState.errors.code} />

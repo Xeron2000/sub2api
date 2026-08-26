@@ -1,6 +1,24 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "@/i18n"
+import { isAdmin, getIsSimpleMode } from "@/lib/auth"
+
+const RESTRICTED_SIMPLE_MODE_PATHS = new Set(["/admin/groups", "/admin/subscriptions", "/admin/redeem"])
+const PAYMENT_PATHS = new Set(["/admin/orders/dashboard", "/admin/orders", "/admin/orders/plans"])
+const RISK_PATHS = new Set(["/admin/risk-control", "/admin/prompt-audit"])
+const OPS_PATHS = new Set(["/admin/ops"])
+
+function isFlagEnabled(key: string): boolean | null {
+  if (typeof window === "undefined") return null
+  try {
+    const v = localStorage.getItem(key)
+    if (v === "true") return true
+    if (v === "false") return false
+    return null
+  } catch {
+    return null
+  }
+}
 
 type NavItem = { to: string; labelKey: string; icon?: string }
 
@@ -73,6 +91,18 @@ function NavGroup({ titleKey, items }: { titleKey: string; items: NavItem[] }) {
 }
 
 export function AppSidebar() {
+  const showAdmin = typeof window !== "undefined" ? isAdmin() : false
+  const simpleMode = typeof window !== "undefined" ? getIsSimpleMode() : false
+  const paymentEnabled = isFlagEnabled("payment_enabled_cached")
+  const riskEnabled = isFlagEnabled("risk_control_enabled_cached")
+  const opsEnabled = isFlagEnabled("ops_monitoring_enabled_cached")
+
+  let filteredAdminNav = adminNav
+  if (simpleMode) filteredAdminNav = filteredAdminNav.filter((i) => !RESTRICTED_SIMPLE_MODE_PATHS.has(i.to))
+  if (paymentEnabled === false) filteredAdminNav = filteredAdminNav.filter((i) => !PAYMENT_PATHS.has(i.to))
+  if (riskEnabled === false) filteredAdminNav = filteredAdminNav.filter((i) => !RISK_PATHS.has(i.to))
+  if (opsEnabled === false) filteredAdminNav = filteredAdminNav.filter((i) => !OPS_PATHS.has(i.to))
+
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col border-r bg-sidebar p-4 gap-6 overflow-y-auto">
       <Link to="/home" className="px-2 text-base font-semibold tracking-tight">
@@ -81,8 +111,12 @@ export function AppSidebar() {
       <NavGroup titleKey="nav.public" items={publicNav} />
       <Separator />
       <NavGroup titleKey="nav.user" items={userNav} />
-      <Separator />
-      <NavGroup titleKey="nav.admin" items={adminNav} />
+      {showAdmin ? (
+        <>
+          <Separator />
+          <NavGroup titleKey="nav.admin" items={filteredAdminNav} />
+        </>
+      ) : null}
     </aside>
   )
 }
