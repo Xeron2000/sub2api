@@ -64,4 +64,86 @@ export const queryKeys = {
     all: () => ["purchase"] as const,
     plans: () => ["purchase", "plans"] as const,
   },
+  admin: {
+    dashboard: {
+      all: () => ["admin", "dashboard"] as const,
+      stats: () => ["admin", "dashboard", "stats"] as const,
+    },
+    usage: {
+      all: () => ["admin", "usage"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "usage", "list", filters] as const,
+    },
+    audit: {
+      all: () => ["admin", "audit"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "audit", "list", filters] as const,
+      detail: (id: number | string) => ["admin", "audit", "detail", id] as const,
+    },
+    announcements: {
+      all: () => ["admin", "announcements"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "announcements", "list", filters] as const,
+      detail: (id: number | string) => ["admin", "announcements", "detail", id] as const,
+    },
+    groups: {
+      all: () => ["admin", "groups"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "groups", "list", filters] as const,
+      detail: (id: number | string) => ["admin", "groups", "detail", id] as const,
+    },
+    accounts: {
+      all: () => ["admin", "accounts"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "accounts", "list", filters] as const,
+      detail: (id: number | string) => ["admin", "accounts", "detail", id] as const,
+    },
+    channels: {
+      all: () => ["admin", "channels"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "channels", "list", filters] as const,
+      pricing: (filters: Record<string, unknown> = {}) => ["admin", "channels", "pricing", filters] as const,
+      monitor: (filters: Record<string, unknown> = {}) => ["admin", "channels", "monitor", filters] as const,
+    },
+    proxies: {
+      all: () => ["admin", "proxies"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "proxies", "list", filters] as const,
+      detail: (id: number | string) => ["admin", "proxies", "detail", id] as const,
+    },
+    redeem: {
+      all: () => ["admin", "redeem"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "redeem", "list", filters] as const,
+    },
+    promo: {
+      all: () => ["admin", "promo"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "promo", "list", filters] as const,
+    },
+    subscriptions: {
+      all: () => ["admin", "subscriptions"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "subscriptions", "list", filters] as const,
+      detail: (id: number | string) => ["admin", "subscriptions", "detail", id] as const,
+    },
+    orders: {
+      all: () => ["admin", "orders"] as const,
+      dashboard: () => ["admin", "orders", "dashboard"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "orders", "list", filters] as const,
+      plans: () => ["admin", "orders", "plans"] as const,
+    },
+    affiliates: {
+      all: () => ["admin", "affiliates"] as const,
+      invites: (filters: Record<string, unknown> = {}) => ["admin", "affiliates", "invites", filters] as const,
+      rebates: (filters: Record<string, unknown> = {}) => ["admin", "affiliates", "rebates", filters] as const,
+      transfers: (filters: Record<string, unknown> = {}) => ["admin", "affiliates", "transfers", filters] as const,
+    },
+    settings: {
+      all: () => ["admin", "settings"] as const,
+      detail: () => ["admin", "settings", "detail"] as const,
+    },
+    risk: {
+      all: () => ["admin", "risk"] as const,
+      config: () => ["admin", "risk", "config"] as const,
+    },
+    promptAudit: {
+      all: () => ["admin", "prompt-audit"] as const,
+      list: (filters: Record<string, unknown> = {}) => ["admin", "prompt-audit", "list", filters] as const,
+    },
+    ops: {
+      all: () => ["admin", "ops"] as const,
+      overview: () => ["admin", "ops", "overview"] as const,
+    },
+  },
 } as const
