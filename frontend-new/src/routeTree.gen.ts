@@ -28,6 +28,7 @@ import { Route as PurchaseRouteImport } from './routes/purchase'
 import { Route as RedeemRouteImport } from './routes/redeem'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as AdminAccountsRouteImport } from './routes/admin/accounts'
@@ -163,6 +164,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubscriptionsRoute = SubscriptionsRouteImport.update({
@@ -394,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/redeem': typeof RedeemRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/usage': typeof UsageRoute
   '/admin/accounts': typeof AdminAccountsRoute
@@ -456,6 +463,7 @@ export interface FileRoutesByTo {
   '/redeem': typeof RedeemRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/usage': typeof UsageRoute
   '/admin/accounts': typeof AdminAccountsRoute
@@ -519,6 +527,7 @@ export interface FileRoutesById {
   '/redeem': typeof RedeemRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup': typeof SetupRoute
   '/subscriptions': typeof SubscriptionsRoute
   '/usage': typeof UsageRoute
   '/admin/accounts': typeof AdminAccountsRoute
@@ -583,6 +592,7 @@ export interface FileRouteTypes {
     | '/redeem'
     | '/register'
     | '/reset-password'
+    | '/setup'
     | '/subscriptions'
     | '/usage'
     | '/admin/accounts'
@@ -645,6 +655,7 @@ export interface FileRouteTypes {
     | '/redeem'
     | '/register'
     | '/reset-password'
+    | '/setup'
     | '/subscriptions'
     | '/usage'
     | '/admin/accounts'
@@ -707,6 +718,7 @@ export interface FileRouteTypes {
     | '/redeem'
     | '/register'
     | '/reset-password'
+    | '/setup'
     | '/subscriptions'
     | '/usage'
     | '/admin/accounts'
@@ -770,6 +782,7 @@ export interface RootRouteChildren {
   RedeemRoute: typeof RedeemRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SetupRoute: typeof SetupRoute
   SubscriptionsRoute: typeof SubscriptionsRoute
   UsageRoute: typeof UsageRoute
   AdminAccountsRoute: typeof AdminAccountsRoute
@@ -946,6 +959,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/subscriptions': {
@@ -1258,6 +1278,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedeemRoute: RedeemRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SetupRoute: SetupRoute,
   SubscriptionsRoute: SubscriptionsRoute,
   UsageRoute: UsageRoute,
   AdminAccountsRoute: AdminAccountsRoute,

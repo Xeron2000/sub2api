@@ -1,7 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { getAuthStatus } from "@/lib/auth"
 import { useTranslation } from "@/i18n"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { useState } from "react"
 import { AppShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
 import { PageHeader } from "@/components/shared/PageHeader"
@@ -26,11 +27,33 @@ export const Route = createFileRoute("/purchase")({
 
 function PurchasePage() {
   const { t } = useTranslation()
+  const [creatingPlanId, setCreatingPlanId] = useState<number | null>(null)
+  const [createError, setCreateError] = useState<string | null>(null)
   const query = useQuery({
     queryKey: queryKeys.purchase.plans(),
     queryFn: async ({ signal }) => {
       const { data } = await paymentAPI.getPlans({ signal })
-      return (data as Array<{ id: number; name: string; price: number; description?: string }>) ?? []
+      // Backend unit is source of truth — do not parseFloat/calc, display as returned (± currency)
+      return (data as Array<{ id: number; name: string; price: number; currency?: string; description?: string }>) ?? []
+    },
+  })
+  const createOrderMut = useMutation({
+    mutationFn: async (planId: number) => {
+      // Amount/currency sent exactly as plan provides; no client-side calc
+      const { data } = await paymentAPI.createOrder({ plan_id: planId })
+      return data as { order_id?: string; out_trade_no?: string; qrcode_url?: string; provider?: string; next_url?: string }
+    },
+    onSuccess: (data, planId) => {
+      setCreatingPlanId(null)
+      const orderId = data.order_id ?? data.out_trade_no
+      // Route based on provider or default QR
+      if (data.next_url) window.location.href = data.next_url
+      else if (orderId) window.location.href = `/payment/qrcode?order_id=${encodeURIComponent(orderId)}`
+      else window.location.href = `/payment/qrcode?plan=${planId}`
+    },
+    onError: (err) => {
+      setCreatingPlanId(null)
+      setCreateError(getAppErrorMessage(err))
     },
   })
 
@@ -57,12 +80,18 @@ function PurchasePage() {
                     {plan.description && <CardDescription>{plan.description}</CardDescription>}
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold">{formatMoney(plan.price)}</p>
+                    <p className="text-2xl font-bold">{formatMoney(plan.price)}{plan.currency ? ` ${plan.currency}` : ""}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {t("purchase.paymentNote") || "Payment provider flows are handled separately."}
                     </p>
-                    <Button className="mt-4 w-full" onClick={() => (window.location.href = `/payment/qrcode?plan=${plan.id}`)}>
-                      {t("purchase.purchase") || "Purchase"}
+                    {createError && creatingPlanId === plan.id && <p role="alert" className="mt-2 text-sm text-destructive">{createError}</p>}
+                    <Button className="mt-4 w-full" disabled={creatingPlanId === plan.id || createOrderMut.isPending} aria-busy={creatingPlanId === plan.id} onClick={() => {
+                      if (creatingPlanId !== null) return // double click guard §33
+                      setCreateError(null)
+                      setCreatingPlanId(plan.id)
+                      createOrderMut.mutate(plan.id)
+                    }}>
+                      {creatingPlanId === plan.id ? "Creating order..." : t("purchase.purchase") || "Purchase"}
                     </Button>
                   </CardContent>
                 </Card>

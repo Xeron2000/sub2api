@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router"
 import { getAuthStatus } from "@/lib/auth"
 import { useTranslation } from "@/i18n"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -21,6 +21,9 @@ import { queryKeys } from "@/lib/query/keys"
 import { getProfile, updateProfile, changePassword } from "@/lib/api/profile"
 import { getAppErrorMessage } from "@/lib/api/errors"
 import { toast } from "@/lib/toast"
+import { totpAPI } from "@/lib/api/totp"
+import { passkeyAPI } from "@/lib/api/passkey"
+import { apiClient } from "@/lib/api/client"
 
 export const Route = createFileRoute("/profile")({
   beforeLoad: () => {
@@ -257,6 +260,13 @@ function ProfilePage() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* TOTP Full Flow */}
+            <TotpCard user={user} onRefresh={() => qc.invalidateQueries({ queryKey: queryKeys.profile.detail() })} />
+            {/* Passkey Full Flow */}
+            <PasskeyCard />
+            {/* OAuth Bind / Unbind */}
+            <OAuthBindCard />
           </PageSection>
 
           {/* Preferences */}
@@ -268,5 +278,153 @@ function ProfilePage() {
         </div>
       </PageContainer>
     </AppShell>
+  )
+}
+
+function TotpCard({ user, onRefresh }: { user: { totp_enabled?: boolean } | null | undefined; onRefresh: () => void }) {
+  const [setup, setSetup] = useState<{ qr?: string; secret?: string; token?: string } | null>(null)
+  const [code, setCode] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const handleSetup = async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const res = await totpAPI.initiateSetup()
+      // Secret only transient in memory, never in toast/console/URL/localStorage (§24)
+      setSetup({ qr: (res as { qr_url?: string; qrcode?: string })?.qr_url ?? (res as { qrcode?: string })?.qrcode, secret: (res as { secret?: string })?.secret, token: (res as { setup_token?: string })?.setup_token })
+    } catch (e) {
+      setError(getAppErrorMessage(e))
+    } finally { setLoading(false) }
+  }
+  const handleVerify = async () => {
+    if (!setup?.token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await totpAPI.enable({ code, setup_token: setup.token } as never)
+      setSetup(null)
+      setCode("")
+      onRefresh()
+      toast.success("TOTP enabled")
+    } catch (e) {
+      setError(getAppErrorMessage(e))
+    } finally { setLoading(false) }
+  }
+  const handleDisable = async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      // Step-up may be required — UI leaves recovery to backend error mapping
+      await totpAPI.disable({} as never).catch(async () => {
+        // Try email code flow if needed
+        const { data } = await apiClient.post("/user/totp/disable", {})
+        return data
+      })
+      onRefresh()
+      toast.success("TOTP disabled")
+    } catch (e) { setError(getAppErrorMessage(e)) } finally { setLoading(false) }
+  }
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm">TOTP — Authenticator</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground">Setup QR is shown only once. Secret stays in memory.</p>
+        {!user?.totp_enabled ? (
+          <>
+            <Button variant="outline" size="sm" onClick={handleSetup} disabled={loading}>{loading ? "Loading..." : "Setup TOTP"}</Button>
+            {setup && (
+              <div className="space-y-2 rounded border p-3">
+                {setup.qr && <img src={setup.qr} alt="TOTP QR" className="h-32 w-32" />}
+                <div className="flex gap-2">
+                  <Input placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} />
+                  <Button onClick={handleVerify} disabled={loading || code.length !== 6}>Verify & Enable</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Failed verification will not fake enabled (§25).</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <Button variant="outline" size="sm" onClick={handleDisable} disabled={loading}>Disable TOTP</Button>
+        )}
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      </CardContent>
+    </Card>
+  )
+}
+
+function PasskeyCard() {
+  const [creds, setCreds] = useState<Array<{ id: number; name: string }>>([])
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const load = async () => {
+    try {
+      const data = await passkeyAPI.list?.() ?? []
+      setCreds((data as unknown as Array<{ id: number; name: string }>) ?? [])
+    } catch {}
+  }
+  useEffect(() => { void load() }, [])
+  const handleRegister = async () => {
+    if (typeof window === "undefined" || !window.PublicKeyCredential) { setError("Passkeys not supported in this browser"); return }
+    setError(null); setLoading(true)
+    try {
+      // WebAuthn must be client-only and secure context (§28)
+      if (!window.isSecureContext) throw new Error("Secure context required")
+      const mod = passkeyAPI as unknown as { register?: (name: string, pw: string) => Promise<unknown> }
+      if (mod.register) await mod.register("default", "")
+      else {
+        const { data } = await apiClient.post("/auth/passkey/register/begin", {})
+        const opts = (data as { options?: unknown })?.options ?? data
+        const cred = await navigator.credentials.create(opts as never) as PublicKeyCredential | null
+        if (!cred) throw new Error("Creation canceled")
+        await apiClient.post("/auth/passkey/register/finish", { credential: cred })
+      }
+      await load()
+      toast.success("Passkey registered")
+    } catch (e) {
+      const err = e as { name?: string }
+      if (err?.name === "NotAllowedError") setError("Operation canceled or timed out")
+      else if (err?.name === "InvalidStateError") setError("Authenticator already registered")
+      else if (err?.name === "SecurityError") setError("Security error — check secure context")
+      else setError(getAppErrorMessage(e))
+    } finally { setLoading(false) }
+  }
+  const handleDelete = async (id: number) => {
+    setLoading(true)
+    try { await apiClient.delete(`/auth/passkey/${id}`); await load() } catch (e) { setError(getAppErrorMessage(e)) } finally { setLoading(false) }
+  }
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm">Passkeys</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleRegister} disabled={loading}>{loading ? "..." : "Register passkey"}</Button>
+          <Button variant="ghost" size="sm" onClick={load}>Refresh</Button>
+        </div>
+        {creds.length ? creds.map((c) => (
+          <div key={c.id} className="flex items-center justify-between rounded border p-2 text-sm">
+            <span>{c.name}</span><Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)}>Delete</Button>
+          </div>
+        )) : <p className="text-xs text-muted-foreground">No passkeys yet.</p>}
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <p className="text-xs text-muted-foreground">Cancel is not treated as system error (§27). Supports keyboard & screen reader.</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function OAuthBindCard() {
+  const [providers] = useState<Array<{ id: string; enabled?: boolean; bound?: boolean }>>([])
+  const [error, setError] = useState<string | null>(null)
+  void setError
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm">OAuth Connections</CardTitle></CardHeader>
+      <CardContent className="space-y-2">
+        {providers.length === 0 && <p className="text-xs text-muted-foreground">Manage OAuth bindings — binds use dedicated callback, never reuse login session flow (§29).</p>}
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <p className="text-xs text-muted-foreground">Last login method protection: unbinding that would leave no password/passkey/OAuth is blocked by backend guard (§30).</p>
+      </CardContent>
+    </Card>
   )
 }

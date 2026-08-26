@@ -7,11 +7,65 @@ import { LoadingState } from "@/components/shared/LoadingState"
 import { ErrorState } from "@/components/shared/ErrorState"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api/client"
+import { getAuthStatus } from "@/lib/auth"
 
 export const Route = createFileRoute("/model-plaza")({ component: ModelPlazaPage })
 
 function ModelPlazaPage() {
   const { t } = useTranslation()
+  // Public settings matrix per docs/frontend-route-policy.md §69 / frontend-special-flows.md §2.7
+  const settingsQuery = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => {
+      try {
+        const { data } = await apiClient.get("/settings/public")
+        const inner = (data as { data?: Record<string, unknown> })?.data ?? data
+        return inner as Record<string, unknown>
+      } catch {
+        return null
+      }
+    },
+    retry: false,
+    staleTime: 60_000,
+  })
+
+  const settings = settingsQuery.data as Record<string, unknown> | null | undefined
+  const enabled = settings?.model_plaza_enabled as boolean | undefined
+  const requireAuth = settings?.model_plaza_require_auth as boolean | undefined
+  const backendMode = settings?.backend_mode_enabled as boolean | undefined
+  const authStatus = typeof window !== "undefined" ? getAuthStatus() : "unknown"
+
+  // Apply matrix before fetching models — but do not fake disabled on settings load failure
+  if (typeof window !== "undefined" && settingsQuery.isSuccess && settings !== null) {
+    if (enabled === false) {
+      // fail-closed: redirect per role (old router) — but backend 404 also handled below
+      if (authStatus === "authenticated") {
+        try {
+          const user = JSON.parse(localStorage.getItem("auth_user") ?? "null") as { role?: string } | null
+          window.location.href = user?.role === "admin" ? "/admin/dashboard" : "/dashboard"
+        } catch {
+          window.location.href = "/dashboard"
+        }
+      } else {
+        window.location.href = "/home"
+      }
+      return null as unknown as React.ReactElement
+    }
+    if (requireAuth === true && authStatus === "anonymous") {
+      window.location.href = "/login?redirect=/model-plaza"
+      return null as unknown as React.ReactElement
+    }
+    if (backendMode === true && authStatus === "authenticated") {
+      try {
+        const user = JSON.parse(localStorage.getItem("auth_user") ?? "null") as { role?: string } | null
+        if (user?.role !== "admin") {
+          window.location.href = "/login"
+          return null as unknown as React.ReactElement
+        }
+      } catch {}
+    }
+  }
+
   const query = useQuery({
     queryKey: ["model-plaza"],
     queryFn: async () => {
@@ -21,8 +75,7 @@ function ModelPlazaPage() {
     retry: false,
   })
 
-  // Gates: model_plaza_enabled (404) and model_plaza_require_auth (redirect to /login if no token)
-  // Backend is source of truth for enabled; require_auth is enforced via 401 + redirect
+  // 401 fallback: Backend is source of truth for require_auth when settings not yet loaded
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("auth_token")
     if (!token && query.isError && (query.error as { status?: number })?.status === 401) {
