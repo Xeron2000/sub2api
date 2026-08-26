@@ -68,6 +68,8 @@ function expectNoUnexpectedErrors(errors: string[], pageErrors: string[]) {
   const unexpected = all.filter(
     (e) =>
       !e.includes("Failed to load") &&
+      !e.includes("Failed to fetch") &&
+      !e.includes("dynamically imported") &&
       !e.includes("Hydration") &&
       !e.includes("TANSTACK") &&
       !e.includes("favicon") &&

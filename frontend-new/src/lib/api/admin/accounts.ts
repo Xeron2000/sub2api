@@ -1,7 +1,7 @@
 import { apiClient } from "../client"
 
 export const accountsAPI = {
-  list: (params?: Record<string, unknown>) => apiClient.get("/admin/accounts", { params }),
+  list: (params?: Record<string, unknown>, options?: { signal?: AbortSignal }) => apiClient.get("/admin/accounts", { params, signal: options?.signal }),
   getById: (id: number | string) => apiClient.get(`/admin/accounts/${id}`),
   create: (data: unknown) => apiClient.post("/admin/accounts", data),
   duplicate: (id: number | string) => apiClient.post(`/admin/accounts/${id}/duplicate`),

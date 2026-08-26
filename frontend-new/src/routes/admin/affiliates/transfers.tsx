@@ -1,42 +1,63 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { useTranslation } from "@/i18n"
 import { useQuery } from "@tanstack/react-query"
+import { useState, useEffect } from "react"
 import { AdminShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { DataTable } from "@/components/shared/DataTable"
-import { apiClient } from "@/lib/api/client"
+import { DataTablePagination } from "@/components/shared/DataTablePagination"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { queryKeys } from "@/lib/query/keys"
+import { affiliatesAPI } from "@/lib/api/admin/affiliates"
+import { createAdminGuard } from "@/lib/guard/adminGuard"
+import { getAppErrorMessage } from "@/lib/api/errors"
+import { useDebouncedValue } from "@/lib/hooks/useDebounce"
 
-export const Route = createFileRoute("/admin/affiliates/transfers")({ component: TransfersPage })
+export const Route = createFileRoute("/admin/affiliates/transfers")({
+  beforeLoad: createAdminGuard(),
+  component: TransfersPage,
+})
 
 function TransfersPage() {
+  const { t } = useTranslation()
+  const [search, setSearch] = useState("")
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const debounced = useDebouncedValue(search, 300)
+  useEffect(() => setPage(1), [debounced])
   const query = useQuery({
-    queryKey: ["admin", "affiliates", "transfers"],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/admin/affiliates/transfers")
-      const d = data as { items?: Array<{ id: number; amount: number; created_at: string }> }
-      return d.items ?? (data as Array<{ id: number; amount: number; created_at: string }>)
-    },
+    queryKey: queryKeys.admin.affiliates.transfers({ page, search: debounced }),
+    queryFn: ({ signal }) => affiliatesAPI.listTransfers({ page, page_size: pageSize, search: debounced || undefined }, { signal }),
   })
-
-  const rows = (query.data as Array<{ id: number; amount: number; created_at: string }>) ?? []
-
+  const raw = query.data as { items?: Array<Record<string, unknown>>; total?: number } | undefined
+  const rows = (raw?.items ?? []) as Array<Record<string, unknown>>
+  const total = raw?.total ?? rows.length
   return (
     <AdminShell>
       <PageContainer>
         <PageHeader titleKey="nav.affiliateTransferRecords" />
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input placeholder={t("common.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" aria-label={t("common.search")} />
+            <Button variant="ghost" onClick={() => setSearch("")}>{t("common.reset")}</Button>
+            <Button variant="outline" onClick={() => query.refetch()} className="ml-auto">{t("common.refresh")}</Button>
+          </div>
           <DataTable
             columns={[
               { header: "ID", accessorKey: "id", align: "right" },
-              { header: "Amount", accessorKey: "amount", align: "right" },
-              { header: "Date", accessorKey: "created_at" },
+              { header: t("admin.affiliates.amount") ?? "Amount", accessorKey: "amount", align: "right" },
+              { header: t("common.createdAt") ?? "Created", accessorKey: "created_at" },
             ]}
             data={rows}
             loading={query.isLoading}
-            error={query.isError ? "Failed to load transfers" : null}
+            error={query.isError ? getAppErrorMessage(query.error) : null}
             onRetry={() => query.refetch()}
-            emptyTitle="No transfers"
+            emptyTitle={t("common.noData")}
+            getRowId={(r) => (r as { id: number }).id}
           />
+          <DataTablePagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
         </div>
       </PageContainer>
     </AdminShell>

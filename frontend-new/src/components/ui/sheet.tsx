@@ -9,8 +9,12 @@ function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
 
-function SheetTrigger({ asChild: _asChild, ...props }: SheetPrimitive.Trigger.Props & { asChild?: boolean }) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+function SheetTrigger({ asChild, children, ...props }: SheetPrimitive.Trigger.Props & { asChild?: boolean }) {
+  if (asChild && React.isValidElement(children)) {
+    // ponytail: asChild clones the single child to avoid <button><button> nesting (Base UI Trigger is a button)
+    return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, props as never)
+  }
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props}>{children as React.ReactNode}</SheetPrimitive.Trigger>
 }
 
 function SheetClose({ ...props }: SheetPrimitive.Close.Props) {

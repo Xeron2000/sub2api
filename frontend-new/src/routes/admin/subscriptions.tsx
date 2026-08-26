@@ -1,7 +1,7 @@
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { useTranslation } from "@/i18n"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AdminShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
 import { PageHeader } from "@/components/shared/PageHeader"
@@ -9,116 +9,101 @@ import { DataTable } from "@/components/shared/DataTable"
 import { DataTablePagination } from "@/components/shared/DataTablePagination"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { apiClient } from "@/lib/api/client"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { StatusBadge } from "@/components/shared/StatusBadge"
+import { queryKeys } from "@/lib/query/keys"
+import { subscriptionsAPI } from "@/lib/api/admin/subscriptions"
+import { createAdminGuard } from "@/lib/guard/adminGuard"
+import { getAppErrorMessage } from "@/lib/api/errors"
+import { useDebouncedValue } from "@/lib/hooks/useDebounce"
+import { toast } from "@/lib/toast"
 
 export const Route = createFileRoute("/admin/subscriptions")({
-  beforeLoad: () => {
-    if (typeof window !== "undefined") {
-      try {
-        const user = JSON.parse(localStorage.getItem("auth_user") || "null")
-        if (user?.is_simple_mode) throw redirect({ to: "/admin/dashboard" })
-      } catch (e) {
-        if ((e as { message?: string })?.message?.includes("redirect")) throw e
-      }
-    }
-  },
+  beforeLoad: createAdminGuard({ blockSimpleMode: true }),
   component: AdminSubscriptionsPage,
 })
+
+type SubRow = { id: number; user: string; group: string; status: string }
 
 function AdminSubscriptionsPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
+  const debounced = useDebouncedValue(search, 300)
   const pageSize = 10
+  useEffect(() => setPage(1), [debounced])
 
   const query = useQuery({
-    queryKey: ["admin", "subscriptions", { page, search }],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/admin/subscriptions", { params: { page, page_size: pageSize, search: search || undefined } })
-      const d = data as { items?: Array<{ id: number; user: string; group: string; status: string }>; total?: number }
-      return { items: d.items ?? [], total: d.total ?? 0 }
-    },
+    queryKey: queryKeys.admin.subscriptions.list({ page, search: debounced }),
+    queryFn: ({ signal }) => subscriptionsAPI.list({ page, page_size: pageSize, search: debounced || undefined }, { signal }),
   })
 
-  const rows = query.data?.items ?? []
-  const total = query.data?.total ?? 0
-
-  const assignMut = useMutation({
-    mutationFn: async (data: { user_id: number; group_id: number; validity_days: number }) => apiClient.post("/admin/subscriptions/assign", data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "subscriptions"] }),
-  })
   const extendMut = useMutation({
-    mutationFn: async ({ id, days }: { id: number; days: number }) => apiClient.post(`/admin/subscriptions/${id}/extend`, { validity_days: days }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "subscriptions"] }),
+    mutationFn: ({ id, days }: { id: number; days: number }) => subscriptionsAPI.extend(id, { validity_days: days }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.admin.subscriptions.all() }); toast.success(t("common.saved")) },
+    onError: (err) => toast.error(getAppErrorMessage(err)),
   })
   const revokeMut = useMutation({
-    mutationFn: async (id: number) => apiClient.post(`/admin/subscriptions/${id}/revoke`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "subscriptions"] }),
+    mutationFn: (id: number) => subscriptionsAPI.revoke(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.admin.subscriptions.all() }); toast.success(t("common.saved")) },
+    onError: (err) => toast.error(getAppErrorMessage(err)),
   })
   const restoreMut = useMutation({
-    mutationFn: async (id: number) => apiClient.post(`/admin/subscriptions/${id}/restore`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "subscriptions"] }),
+    mutationFn: (id: number) => subscriptionsAPI.restore(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.admin.subscriptions.all() }); toast.success(t("common.saved")) },
+    onError: (err) => toast.error(getAppErrorMessage(err)),
   })
   const resetQuotaMut = useMutation({
-    mutationFn: async (id: number) => apiClient.post(`/admin/subscriptions/${id}/reset-quota`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "subscriptions"] }),
+    mutationFn: (id: number) => subscriptionsAPI.resetQuota(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.admin.subscriptions.all() }); toast.success(t("common.saved")) },
+    onError: (err) => toast.error(getAppErrorMessage(err)),
   })
+
+  const raw = query.data as { items?: SubRow[]; total?: number } | undefined
+  const rows: SubRow[] = raw?.items ?? []
+  const total = raw?.total ?? rows.length
 
   return (
     <AdminShell>
       <PageContainer>
         <PageHeader titleKey="admin.subscriptions.title" />
         <div className="mt-6 space-y-4">
-          <div className="flex gap-2">
-            <Input placeholder={t("common.searchPlaceholder")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="max-w-sm" />
-            <Button variant="outline" onClick={() => query.refetch()}>
-              Refresh
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input placeholder={t("common.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" aria-label={t("common.search")} />
+            <Button variant="ghost" onClick={() => setSearch("")}>{t("common.reset")}</Button>
+            <Button variant="outline" onClick={() => query.refetch()} className="ml-auto">{t("common.refresh")}</Button>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => assignMut.mutate({ user_id: 1, group_id: 1, validity_days: 30 })}>
-              Assign
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => extendMut.mutate({ id: 1, days: 7 })}>
-              Extend
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => revokeMut.mutate(1)}>
-              Revoke
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => restoreMut.mutate(1)}>
-              Restore
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => resetQuotaMut.mutate(1)}>
-              Reset Quota
-            </Button>
-          </div>
-          <DataTable
+          <DataTable<SubRow>
             columns={[
               { header: "ID", accessorKey: "id", align: "right" },
-              { header: "User", accessorKey: "user" },
-              { header: "Group", accessorKey: "group" },
-              { header: "Status", accessorKey: "status" },
+              { header: t("admin.subscriptions.user") ?? "User", accessorKey: "user" },
+              { header: t("admin.subscriptions.group") ?? "Group", accessorKey: "group" },
+              { header: t("common.status"), cell: (r) => <StatusBadge status={r.status === "active" ? "success" : r.status === "expired" ? "warning" : "default"} label={r.status} /> },
               {
-                header: "Actions",
+                header: t("common.actions"),
                 align: "right",
-                cell: (r: { id: number }) => (
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => extendMut.mutate({ id: r.id, days: 7 })}>
-                      Extend
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => revokeMut.mutate(r.id)}>
-                      Revoke
-                    </Button>
-                  </div>
+                cell: (row) => (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 hover:bg-accent">
+                      {t("common.actions")}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => extendMut.mutate({ id: row.id, days: 7 })}>{t("admin.subscriptions.extend") ?? "Extend 7d"}</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => revokeMut.mutate(row.id)}>{t("admin.subscriptions.revoke") ?? "Revoke"}</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => restoreMut.mutate(row.id)}>{t("admin.subscriptions.restore") ?? "Restore"}</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => resetQuotaMut.mutate(row.id)}>{t("admin.subscriptions.resetQuota") ?? "Reset Quota"}</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ),
               },
             ]}
             data={rows}
             loading={query.isLoading}
-            error={query.isError ? "Failed to load subscriptions" : null}
+            error={query.isError ? getAppErrorMessage(query.error) : null}
             onRetry={() => query.refetch()}
-            emptyTitle="No subscriptions"
+            emptyTitle={t("common.noData")}
+            getRowId={(r) => r.id}
           />
           <DataTablePagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
         </div>

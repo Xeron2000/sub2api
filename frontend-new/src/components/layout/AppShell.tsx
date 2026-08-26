@@ -5,6 +5,7 @@ import { AppHeader } from "./AppHeader"
 import { AppSidebar } from "./AppSidebar"
 import { useTranslation } from "@/i18n"
 import { getRouteMeta } from "@/lib/routeMeta"
+import { getAuthStatus, isAdmin } from "@/lib/auth"
 
 function useDocumentTitle() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -35,7 +36,29 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 export function AdminShell({ children }: { children: ReactNode }) {
-  return <AppShell>{children}</AppShell>
+  useDocumentTitle()
+  useEffect(() => {
+    const pathname = window.location.pathname
+    if (!pathname.startsWith("/admin")) return
+    const status = getAuthStatus()
+    if (status === "unknown") return
+    if (status === "anonymous") {
+      window.location.href = `/login?redirect=${encodeURIComponent(pathname)}`
+      return
+    }
+    if (!isAdmin()) {
+      window.location.href = "/dashboard"
+    }
+  }, [])
+  return (
+    <div className="flex min-h-screen">
+      <AppSidebar />
+      <div className="flex flex-1 flex-col min-w-0">
+        <AppHeader />
+        <main className="flex-1 bg-muted/20">{children}</main>
+      </div>
+    </div>
+  )
 }
 
 export function PublicShell({ children }: { children: ReactNode }) {

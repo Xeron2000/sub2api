@@ -1,25 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { useTranslation } from "@/i18n"
 import { useQuery } from "@tanstack/react-query"
 import { AdminShell } from "@/components/layout/AppShell"
 import { PageContainer } from "@/components/shared/PageContainer"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { DataTable } from "@/components/shared/DataTable"
-import { apiClient } from "@/lib/api/client"
+import { queryKeys } from "@/lib/query/keys"
+import { listChannelMonitors } from "@/lib/api/admin/channelMonitor"
+import { createAdminGuard } from "@/lib/guard/adminGuard"
+import { getAppErrorMessage } from "@/lib/api/errors"
 
-export const Route = createFileRoute("/admin/channels/monitor")({ component: MonitorPage })
+export const Route = createFileRoute("/admin/channels/monitor")({
+  beforeLoad: createAdminGuard(),
+  component: ChannelMonitorPage,
+})
 
-function MonitorPage() {
+function ChannelMonitorPage() {
+  const { t } = useTranslation()
   const query = useQuery({
-    queryKey: ["admin", "channels", "monitor"],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/admin/channel-monitors")
-      const d = data as { items?: Array<{ id: number; name: string; status: string }> }
-      return d.items ?? (data as Array<{ id: number; name: string; status: string }>)
-    },
+    queryKey: queryKeys.admin.channels.monitor({}),
+    queryFn: ({ signal }) => listChannelMonitors({}, { signal }),
   })
-
-  const rows = (query.data as Array<{ id: number; name: string; status: string }>) ?? []
-
+  const raw = query.data as { items?: Array<Record<string, unknown>> } | undefined
+  const rows = (raw?.items ?? []) as Array<Record<string, unknown>>
   return (
     <AdminShell>
       <PageContainer>
@@ -28,14 +31,16 @@ function MonitorPage() {
           <DataTable
             columns={[
               { header: "ID", accessorKey: "id", align: "right" },
-              { header: "Name", accessorKey: "name" },
-              { header: "Status", accessorKey: "status" },
+              { header: t("admin.channelMonitor.channel") ?? "Channel", accessorKey: "name" },
+              { header: t("admin.channelMonitor.status") ?? "Status", accessorKey: "status" },
+              { header: t("admin.channelMonitor.latency") ?? "Latency", accessorKey: "latency", align: "right" },
             ]}
             data={rows}
             loading={query.isLoading}
-            error={query.isError ? "Failed to load monitors" : null}
+            error={query.isError ? getAppErrorMessage(query.error) : null}
             onRetry={() => query.refetch()}
-            emptyTitle="No monitors"
+            emptyTitle={t("common.noData")}
+            getRowId={(r) => (r as { id: number }).id}
           />
         </div>
       </PageContainer>
