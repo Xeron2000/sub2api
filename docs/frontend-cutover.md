@@ -143,7 +143,7 @@ docker rm -f sub2api-cutover-test
 - [ ] `pnpm --dir frontend-new typecheck` green
 - [ ] `pnpm --dir frontend-new test` green
 - [ ] `pnpm --dir frontend-new build` green + `go build -tags embed` OK
-- [ ] `pnpm --dir frontend-new test:e2e` green (106 tests)
+- [x] `pnpm --dir frontend-new test:e2e` green (149 tests — 149/149 dev + 149/149 prod, Goal 7)
 - [ ] Visual baseline green (§30-32)
 - [ ] Security P0 green (XSS, redirect, postMessage, payment, admin, bundle leak)
 - [ ] Parity green (`docs/frontend-final-parity.md`)

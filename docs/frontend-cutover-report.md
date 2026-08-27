@@ -5,7 +5,7 @@
 ## 1. Routes Discovered / Tested / Parity
 
 - Discovered: 64 entries from `routeTree.gen.ts` (59 file routes + 5 redirects/catch-all) — full table in `docs/frontend-final-qa.md`
-- Tested: 106 E2E tests green (see `pnpm --dir frontend-new test:e2e` pass), plus unit `go test -tags embed ./internal/web` PASS
+- Tested: 149 E2E tests green (see `pnpm --dir frontend-new test:e2e` pass), plus unit `go test -tags embed ./internal/web` PASS (Goal 7: 149/149 dev + 149/149 prod)
 - Parity: `docs/frontend-final-parity.md` — 58 PARITY, 4 BUG_FIXED (open-redirect, XSS, payment authoritative, legal), 3 CONSOLIDATED, 2 REMOVED_WITH_REASON — 0 UNKNOWN
 
 ## 2. Test Suites
@@ -16,7 +16,8 @@
 | typecheck | `pnpm --dir frontend-new typecheck` | PASS |
 | unit | `pnpm --dir frontend-new test` | PASS |
 | build | `pnpm --dir frontend-new build` + `cp _shell.html index.html` + `go build -tags embed` | PASS |
-| E2E (dev) | `pnpm --dir frontend-new test:e2e` | 106 passed |
+| E2E (dev) | `pnpm --dir frontend-new test:e2e` | 149 passed |
+| E2E (prod) | `pnpm --dir frontend-new test:e2e:production` | 149 passed |
 | Visual | `e2e/visual-regression.spec.ts` (44 snapshots: 14 pages ×3 + dev/ui) | baseline established |
 | Go embed | `go test -tags embed ./internal/web -v` | PASS (all 9 sub-tests) |
 | Backend unit | `go test -tags unit ./internal/web` | PASS |

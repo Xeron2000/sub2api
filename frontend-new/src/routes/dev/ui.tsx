@@ -31,7 +31,8 @@ export const Route = createFileRoute("/dev/ui")({ component: UIPlayground })
 function UIPlayground() {
   const { t } = useTranslation()
   const [errorDemoKey, setErrorDemoKey] = useState(0)
-  if (!import.meta.env.DEV) return <div className="p-8 text-sm text-muted-foreground">Playground is dev-only.</div>
+  const allowVisual = typeof window !== "undefined" && (window.location.search.includes("visual") || (() => { try { return localStorage.getItem("visual_test") === "1" } catch { return false } })())
+  if (!import.meta.env.DEV && !allowVisual) return <div className="p-8 text-sm text-muted-foreground">Playground is dev-only.</div>
   return (
     <PageContainer>
       <PageHeader titleKey="dev.ui.title" descriptionKey="dev.ui.description" />

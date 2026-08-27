@@ -132,6 +132,7 @@ deploy/docker-compose.override.yml
 .gocache/
 vite.config.js
 docs/*
+!docs/frontend-*.md
 !docs/frontend-user-migration.md
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
@@ -145,6 +146,12 @@ frontend/coverage/
 aicodex
 output/
 .codegraph/
+
+# pi / goal local files (not committed)
+.pi-glla/
+frontend-new/test-results/
+test-results/
+goal*.md
 
 # Vitest / Vite cache at repo root
 .vite/

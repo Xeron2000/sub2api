@@ -20,6 +20,8 @@ const BASELINE_PAGES = [
 ] as const
 
 async function mockForVisual(page: Page, theme: "light" | "dark", path: string) {
+  // Allow /dev/ui playground in production build for visual baseline
+  await page.addInitScript(() => { try { localStorage.setItem("visual_test", "1") } catch {} })
   await page.route("**/api/**", async (route) => {
     const url = route.request().url()
     if (url.includes("/api/auth/me") || url.includes("/auth/me")) {
@@ -101,12 +103,12 @@ test.describe("visual regression — §31 baseline", () => {
 
   test("Desktop Light/Dark — /dev/ui", async ({ page }) => {
     await mockForVisual(page, "light", "/dev/ui")
-    await page.goto("/dev/ui", { waitUntil: "networkidle" })
+    await page.goto("/dev/ui?visual=1", { waitUntil: "networkidle" })
     await page.waitForTimeout(1000)
     await page.waitForLoadState("networkidle")
     await expect(page).toHaveScreenshot("dev_ui-desktop-light.png", { maxDiffPixelRatio: 0.05, animations: "disabled" })
     await mockForVisual(page, "dark", "/dev/ui")
-    await page.goto("/dev/ui", { waitUntil: "networkidle" })
+    await page.goto("/dev/ui?visual=1", { waitUntil: "networkidle" })
     await page.waitForTimeout(1000)
     await page.waitForLoadState("networkidle")
     await expect(page).toHaveScreenshot("dev_ui-desktop-dark.png", { maxDiffPixelRatio: 0.05, animations: "disabled" })

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation } from "@tanstack/react-query"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -34,6 +34,8 @@ function SetupPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [formError, setFormError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
 
   const statusQuery = useQuery({
     queryKey: ["setup", "status"],
@@ -49,6 +51,8 @@ function SetupPage() {
   const mutation = useMutation({
     mutationFn: (data: FormData) => installSetup({ admin: data }),
     onSuccess: () => {
+      submittingRef.current = false
+      setSubmitting(false)
       toast.success("Setup completed")
       // After setup, redirect based on new admin session — backend is source of truth for race
       const authed = typeof window !== "undefined" && !!localStorage.getItem("auth_token")
@@ -65,6 +69,8 @@ function SetupPage() {
       void t
     },
     onError: (err: unknown) => {
+      submittingRef.current = false
+      setSubmitting(false)
       const msg = getAppErrorMessage(err)
       // Handle already_initialized race per §58: backend wins, second flow shows redirect
       if (msg.includes("already") || msg.includes("initialized")) {
@@ -119,7 +125,10 @@ function SetupPage() {
           <form
             onSubmit={form.handleSubmit((v) => {
               setFormError(null)
-              if (mutation.isPending) return // guard double submit §57
+              // Synchronous guard: exactly one POST — UI enters submitting before async mutation
+              if (submittingRef.current || submitting || mutation.isPending) return
+              submittingRef.current = true
+              setSubmitting(true)
               mutation.mutate(v)
             })}
             className="space-y-4"
@@ -136,8 +145,8 @@ function SetupPage() {
               {form.formState.errors.password && <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>}
             </div>
             {formError && <p role="alert" className="text-sm text-destructive">{formError}</p>}
-            <Button type="submit" className="w-full" disabled={mutation.isPending} aria-busy={mutation.isPending}>
-              {mutation.isPending ? "Setting up..." : "Initialize"}
+            <Button type="submit" className="w-full" disabled={submitting || mutation.isPending} aria-busy={submitting || mutation.isPending}>
+              {submitting || mutation.isPending ? "Setting up..." : "Initialize"}
             </Button>
           </form>
         </CardContent>

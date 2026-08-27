@@ -15,7 +15,8 @@ const config = defineConfig({
     proxy: {
       "/api": { target: "http://localhost:18786", changeOrigin: true },
       "/v1": { target: "http://localhost:18786", changeOrigin: true },
-      "/setup": { target: "http://localhost:18786", changeOrigin: true },
+      "/setup/status": { target: "http://localhost:18786", changeOrigin: true },
+      "/setup/install": { target: "http://localhost:18786", changeOrigin: true },
     },
   },
 })
