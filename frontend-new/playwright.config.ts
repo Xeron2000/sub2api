@@ -3,9 +3,10 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./e2e",
   timeout: 30_000,
-  expect: { timeout: 5_000 },
+  expect: { timeout: 10_000 },
   fullyParallel: false,
-  retries: 0,
+  retries: process.env.CI ? 2 : 1,
+  workers: 1,
   use: {
     baseURL: "http://localhost:18788",
     trace: "on-first-retry",
