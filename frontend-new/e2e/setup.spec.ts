@@ -90,10 +90,9 @@ test.describe("setup", () => {
     await page.locator("#password").fill("StrongPass123!")
     await page.getByRole("button", { name: /Initialize/i }).click()
 
-    // Deterministic: poll for POST count and also wait for network response (either may fire first)
+    // Deterministic: poll for POST count (no sleep for correctness)
     await expect.poll(() => installCount, { timeout: 5000 }).toBe(1)
-    // Also confirm network response was observed (broader match)
-    await page.waitForResponse((r) => r.url().includes("setup/install"), { timeout: 2000 }).catch(() => {})
+    await page.waitForResponse((r) => r.url().includes("setup/install"), { timeout: 2000 })
     // Success triggers hard redirect — page must leave /setup (or show success state, no longer wizard)
     await expect(page).not.toHaveURL(/\/setup/, { timeout: 5000 })
     await expect(page.locator("body")).toBeVisible()
@@ -146,16 +145,14 @@ test.describe("setup", () => {
     await expect(submitBtn).toContainText(/Setting up/i)
     expect(count).toBe(1)
 
-    // Attempt second user action while first is held — must not produce second POST
-    await submitBtn.click({ force: true, timeout: 1000 }).catch(() => {})
+    // Attempt second user action while first is held — must not produce second POST (force click proves app guard, not disabled bypass)
+    await submitBtn.click({ force: true, timeout: 1000 })
     expect(count).toBe(1)
 
     // Release first request; allow navigation/success to proceed
     releaseHold()
     await page.waitForResponse((r) => r.url().includes("/setup/install") && r.request().method() === "POST", { timeout: 5000 })
-    // Still exactly one, even after release window
-    // Poll briefly to catch stray second request
-    await page.waitForTimeout(300)
-    expect(count).toBe(1)
+    // Still exactly one — deterministic check without sleep, poll to ensure no stray second request
+    await expect.poll(() => count, { timeout: 1000 }).toBe(1)
   })
 })

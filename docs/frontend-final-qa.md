@@ -1,6 +1,6 @@
 # Frontend Final QA — Route Inventory
 
-> Generated from `frontend-new/src/routeTree.gen.ts` (59 routes) | Date: 2026-08-27 | Build: SPA `_shell.html` via `tanstackStart({ spa: { enabled:true } })`
+> Generated from `frontend-new/src/routeTree.gen.ts` (62 file routes) | Date: 2026-08-27 | Build: SPA `_shell.html` via `tanstackStart({ spa: { enabled:true } })` — `find frontend-new/src/routes -name "*.tsx" | wc -l` → 62, `grep -c "Route as" routeTree.gen.ts` → 62, total entries 64
 > Source of truth: `routeTree.gen.ts` auto-generated, not hand-written. Classification per §22.
 
 ## 1. Route Inventory (auto-generated)
@@ -72,7 +72,7 @@
 | 63 | `/dev/ui` | `routes/dev/ui.tsx` | DEV_ONLY | PUBLIC | dev only | VERIFIED — production returns 404 |
 | 64 | `/$splat` (catch-all) | `__root.tsx` notFoundComponent | DYNAMIC | PUBLIC | — | VERIFIED — 404 page |
 
-> Total: 64 entries (59 file routes + 3 implicit redirects + catch-all + index). Every route is classified; none is UNKNOWN/TODO/PARTIAL.
+> Total: 64 entries (62 file routes — `find frontend-new/src/routes -name "*.tsx" | wc -l` → 62 — + redirects/catch-all). Every route is classified; none is UNKNOWN/TODO/PARTIAL.
 
 ## 2. Coverage vs Goal 3/4/5 Inventories
 
@@ -124,9 +124,9 @@ No unidentified route. Missing routes: 0.
 | typecheck | `pnpm --dir frontend-new typecheck` | PASS |
 | unit | `pnpm --dir frontend-new test` | PASS |
 | build | `pnpm --dir frontend-new build` + `cp _shell.html index.html` + `go build -tags embed` | PASS |
-| E2E | `pnpm --dir frontend-new test:e2e` | PASS (106 tests, see artifacts) |
+| E2E | `pnpm --dir frontend-new test:e2e` | PASS (149 tests — `pnpm --dir frontend-new test:e2e --list | grep -c "›"` → 149) |
 | Docker E2E | `docker build` + `docker run` + Playwright against container | PASS |
-| Visual | `toHaveScreenshot` baseline (16 pages × 3 combos) | PASS |
+| Visual | `toHaveScreenshot` baseline (44 snapshots: 14 pages ×3 + dev/ui) | PASS |
 | Console | `console.error` + `pageerror` gate | PASS — 0 unexpected |
 | Network | 4xx/5xx gate | PASS — only expected 401→refresh single-flight |
 | Duplicate requests | same endpoint ×2 check | PASS |
@@ -139,7 +139,7 @@ Covered pages (Desktop Light, Desktop Dark, Mobile Light; /dev/ui only Desktop):
 - `/admin/dashboard`, `/admin/users`, `/admin/groups`, `/admin/accounts`, `/admin/settings`
 - `/model-plaza`, `/setup`, `/payment/qrcode`, `/payment/result`, `/dev/ui`
 
-Screenshots stored under `frontend-new/e2e/__screenshots__/` with animations disabled, stable mock data.
+Screenshots stored under `frontend-new/e2e/visual-regression.spec.ts-snapshots/` (44 PNGs — 14 pages ×3 + dev/ui) with animations disabled, stable mock data, maxDiff 0.05.
 
 ## 6. Checks
 

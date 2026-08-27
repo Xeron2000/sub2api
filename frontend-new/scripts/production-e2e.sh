@@ -107,6 +107,40 @@ check "/unknown-frontend-xyz" "200" "text/html" "SPA"
 check "/api/not-exists" "404" "application/json" "API"
 check "/v1/not-exists" "404" "application/json" "API"
 check "/health" "200" "application/json" "API"
+# Hashed asset must be immutable with correct content-type
+{
+  hashed=$(ls "${FRONTEND_DIR}/dist/client/assets/"*.js 2>/dev/null | head -1 | xargs -n1 basename || true)
+  if [[ -n "$hashed" ]]; then
+    out=$(curl -s -i "http://localhost:${PORT}/assets/$hashed" 2>&1)
+    if ! echo "$out" | grep -iq "immutable"; then
+      echo "FAIL ASSET: /assets/$hashed expected immutable cache"
+      echo "$out" | head -10
+      FAIL=1
+    else
+      echo "PASS ASSET: /assets/$hashed -> immutable"
+    fi
+    if ! echo "$out" | grep -iq "application/javascript"; then
+      echo "FAIL ASSET: $hashed content-type not javascript"
+      echo "$out" | head -5
+      FAIL=1
+    fi
+  else
+    echo "WARN: no hashed asset found for immutable check"
+  fi
+  out=$(curl -s -i "http://localhost:${PORT}/" 2>&1)
+  if ! echo "$out" | grep -iq "no-cache"; then
+    echo "FAIL SHELL: / expected no-cache"
+    echo "$out" | head -10
+    FAIL=1
+  else
+    echo "PASS SHELL: / -> no-cache"
+  fi
+  if ! echo "$out" | grep -iq "etag"; then
+    echo "WARN SHELL: / expected ETag but not found (non-fatal)"
+  else
+    echo "PASS SHELL: ETag present"
+  fi
+}
 
 if [[ $FAIL -ne 0 ]]; then
   echo "Curl checks FAILED"
