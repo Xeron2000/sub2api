@@ -32,12 +32,14 @@ function CustomPage() {
   }
 
   if (query.isError) {
-    const status = (query.error as { status?: number; response?: { status?: number } })?.status ?? (query.error as { response?: { status?: number } })?.response?.status
-    const msg = (query.error as { message?: string })?.message ?? "Failed to load custom page"
-    // Distinct states per §65: 404 / disabled / permission / backend error
+    const err = query.error as unknown as { status?: number; type?: string; response?: { status?: number }; message?: string }
+    const status = err?.status ?? err?.response?.status
+    const type = (err as { type?: string })?.type
+    const msg = err?.message ?? "Failed to load custom page"
+    // Distinct states per §65: 404 / disabled / permission / backend error — handle both status and AppError type
     let display = msg
-    if (status === 404) display = "Custom page not found."
-    else if (status === 403) display = "You do not have permission to view this page."
+    if (status === 404 || type === "not_found" || /not found/i.test(msg)) display = "Custom page not found."
+    else if (status === 403 || type === "forbidden" || /permission|forbidden/i.test(msg)) display = "You do not have permission to view this page."
     else if (msg.includes("disabled")) display = "This page is disabled."
     void DOMPurify // keep reference for bundler
     return (
@@ -76,7 +78,7 @@ function CustomPage() {
     <AppShell>
       <PageContainer>
         <h1 className="text-2xl font-semibold">{query.data?.title ?? `Custom ${id}`}</h1>
-        <div className="prose prose-sm mt-4 max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: sanitized }} />
+        <div className="prose prose-sm mt-4 max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: sanitized /* DOMPurify sanitized via sanitizeHTMLSync */ }} />
       </PageContainer>
     </AppShell>
   )

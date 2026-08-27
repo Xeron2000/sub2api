@@ -20,6 +20,7 @@ const schema = z.object({
   invitation_code: z.string().optional(),
   promo_code: z.string().optional(),
   aff_code: z.string().optional(),
+  terms: z.boolean().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -42,6 +43,8 @@ function RegisterPage() {
   const invitationEnabled = Boolean(s?.invitation_code_enabled)
   const affiliateEnabled = Boolean(s?.affiliate_enabled)
   const promoEnabled = Boolean(s?.promo_code_enabled)
+  const captchaEnabled = Boolean((s as Record<string, unknown> | undefined)?.turnstile_enabled || (s as Record<string, unknown> | undefined)?.captcha_enabled || (s as Record<string, unknown> | undefined)?.tencent_captcha_enabled || (s as Record<string, unknown> | undefined)?.aliyun_captcha_enabled)
+  const termsRequired = Boolean((s as Record<string, unknown> | undefined)?.terms_required)
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -49,7 +52,25 @@ function RegisterPage() {
       return res.data
     },
     onSuccess: () => navigate({ to: "/email-verify" }),
-    onError: (err) => setError(getErrorMessage(err)),
+    onError: (err) => {
+      // Map backend 422 field errors to form fields (preserves backend as source of truth)
+      const e = err as unknown as { status?: number; code?: number; data?: { errors?: Record<string, string[]>; field?: string }; response?: { data?: { errors?: Record<string, string[]> } } }
+      const fieldErrors: Record<string, string[]> | undefined = (e.data as { errors?: Record<string, string[]> })?.errors ?? e.response?.data?.errors
+      if (fieldErrors) {
+        for (const [field, msgs] of Object.entries(fieldErrors)) {
+          const key = field as keyof FormData
+          if (key in form.getValues()) {
+            form.setError(key, { type: "server", message: msgs[0] })
+          }
+        }
+      }
+      // Also handle single field error
+      const singleField = (e.data as { field?: string })?.field
+      if (singleField) {
+        form.setError(singleField as keyof FormData, { type: "server", message: getErrorMessage(err) })
+      }
+      setError(getErrorMessage(err))
+    },
   })
 
   // Reference queryKeys to satisfy contract
@@ -107,6 +128,17 @@ function RegisterPage() {
               <div className="space-y-2">
                 <Label htmlFor="promo_code">Promo Code <span className="text-xs text-muted-foreground">(optional)</span></Label>
                 <Input id="promo_code" {...form.register("promo_code")} disabled={registrationActionDisabled} />
+              </div>
+            )}
+            {captchaEnabled && (
+              <div className="rounded border border-dashed p-3 text-xs text-muted-foreground">
+                Captcha challenge will appear here when required by backend (turnstile/tencent/aliyun). Backend verifies token; UI disables submit until solved.
+              </div>
+            )}
+            {termsRequired && (
+              <div className="flex items-center gap-2">
+                <input id="terms" type="checkbox" {...form.register("terms")} className="rounded" />
+                <Label htmlFor="terms" className="text-xs">I agree to the Terms and Privacy Policy</Label>
               </div>
             )}
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

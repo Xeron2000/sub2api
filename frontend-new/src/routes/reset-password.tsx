@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useMutation } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,7 +22,15 @@ type FormData = z.infer<typeof schema>
 function ResetPasswordPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const [invalidLink, setInvalidLink] = useState(false)
   const form = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { token: "", password: "" } })
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const p = new URLSearchParams(window.location.search)
+    const t = p.get("token") ?? p.get("code") ?? ""
+    if (t) form.setValue("token", t)
+  }, [form])
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -30,7 +38,14 @@ function ResetPasswordPage() {
       return res.data
     },
     onSuccess: () => navigate({ to: "/login" }),
-    onError: (err) => setError(getErrorMessage(err)),
+    onError: (err) => {
+      const msg = getErrorMessage(err)
+      if (/expired/i.test(msg)) setError("Link expired, please request a new reset link.")
+      else if (/invalid|wrong|incorrect/i.test(msg)) {
+        setError("Invalid reset link.")
+        setInvalidLink(true)
+      } else setError(msg)
+    },
   })
 
   return (
@@ -41,6 +56,11 @@ function ResetPasswordPage() {
           <CardDescription>Enter token and new password</CardDescription>
         </CardHeader>
         <CardContent>
+          {invalidLink && (
+            <div role="alert" className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
+              This reset link is invalid or expired. Please request a new one. <Link to="/forgot-password" className="ml-2 text-primary hover:underline">Request new link</Link>
+            </div>
+          )}
           <form
             onSubmit={form.handleSubmit((v) => {
               setError(null)

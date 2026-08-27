@@ -60,11 +60,13 @@ function StripePopupPage() {
       if (status && window.opener) {
         // Validate shape before sending
         const payload = { type: "stripe-popup" as const, status, order_id: orderId ?? undefined }
-        // Use targetOrigin, not "*" when possible
+        // Use strict targetOrigin — never "*" per §44 postMessage security
         try {
+          // origin is validated to be same-origin or derived from query, never user-controlled unsafe
           window.opener.postMessage(payload, origin)
         } catch {
-          window.opener.postMessage(payload, "*")
+          // Fallback to same-origin only, never wildcard
+          window.opener.postMessage(payload, window.location.origin)
         }
         // Do not auto-close unconditionally — let user confirm or after timeout
         setTimeout(() => {

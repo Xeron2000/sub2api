@@ -5,6 +5,7 @@ import { PageContainer } from "@/components/shared/PageContainer"
 import { LoadingState } from "@/components/shared/LoadingState"
 import { ErrorState } from "@/components/shared/ErrorState"
 import { apiClient } from "@/lib/api/client"
+import { sanitizeHTMLSync } from "@/lib/sanitize"
 
 export const Route = createFileRoute("/legal/$documentId")({ component: LegalPage })
 
@@ -44,7 +45,7 @@ function LegalPage() {
     <PublicShell>
       <PageContainer>
         <h1 className="text-2xl font-semibold">{query.data?.title ?? documentId}</h1>
-        <div className="prose prose-sm mt-4 max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: query.data?.content ?? "<p>No content</p>" }} />
+        <div className="prose prose-sm mt-4 max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: sanitizeHTMLSync(query.data?.content ?? "<p>No content</p>") /* DOMPurify sanitized */ }} />
       </PageContainer>
     </PublicShell>
   )

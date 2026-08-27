@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AuthShell } from "@/components/layout/AppShell"
-import { apiClient, getErrorMessage } from "@/lib/api/client"
+import { apiClient } from "@/lib/api/client"
 
 export const Route = createFileRoute("/forgot-password")({ component: ForgotPasswordPage })
 
@@ -29,8 +29,11 @@ function ForgotPasswordPage() {
       return res.data
     },
     onSuccess: () => setSuccess(true),
-    onError: (err) => setError(getErrorMessage(err)),
+    // Enumeration-safe: backend returns generic success; on error still show generic success per §12
+    onError: () => setSuccess(true),
   })
+  void error // keep error state for fallback display if needed
+  void setError
 
   if (success) {
     return (
