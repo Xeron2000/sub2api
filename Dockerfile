@@ -23,25 +23,22 @@ ARG NPM_CONFIG_REGISTRY=
 FROM --platform=${BUILDPLATFORM} ${NODE_IMAGE} AS frontend-builder
 ARG NPM_CONFIG_REGISTRY
 
-WORKDIR /app/frontend
+WORKDIR /app/frontend-new
 
 # Install pnpm (pinned to v9 to match CI and keep builds reproducible)
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Install dependencies first (better caching)
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY frontend-new/package.json frontend-new/pnpm-lock.yaml frontend-new/pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=sub2api-pnpm-store,target=/root/.local/share/pnpm/store \
     if [ -n "${NPM_CONFIG_REGISTRY}" ]; then pnpm config set registry "${NPM_CONFIG_REGISTRY}"; fi && \
     pnpm install --frozen-lockfile --prefer-offline
 
 # Copy frontend source and build.
-# LegalDocumentView.vue (admin-compliance gate) build-time imports
-# ../../../../docs/legal/*.md?raw, so docs/legal/ must sit beside frontend/
-# in the image (WORKDIR /app/frontend -> resolves to /app/docs/legal/*.md).
-# Copy only that subtree to keep the build dependency minimal.
-COPY frontend/ ./
-COPY docs/legal/ /app/docs/legal/
-RUN pnpm run build
+# TanStack Start SPA mode outputs to dist/client/_shell.html + assets.
+# Copy shell to index.html so Go embed (which expects dist/index.html) works.
+COPY frontend-new/ ./
+RUN pnpm run build && cp dist/client/_shell.html dist/client/index.html
 
 # -----------------------------------------------------------------------------
 # Stage 2: Backend Builder
@@ -81,7 +78,8 @@ RUN --mount=type=cache,id=sub2api-gomod,target=/go/pkg/mod \
 COPY backend/ ./
 
 # Copy frontend dist from previous stage (must be after backend copy to avoid being overwritten)
-COPY --from=frontend-builder /app/backend/internal/web/dist ./internal/web/dist
+# TanStack Start SPA: static output is frontend-new/dist/client (_shell.html + assets)
+COPY --from=frontend-builder /app/frontend-new/dist/client ./internal/web/dist
 
 # Build the binary (BuildType=release for CI builds, embed frontend)
 # Version precedence: build arg VERSION > exact git tag > cmd/server/VERSION

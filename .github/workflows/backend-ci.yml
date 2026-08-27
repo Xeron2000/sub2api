@@ -53,12 +53,31 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: frontend-new/pnpm-lock.yaml
       - name: Install frontend dependencies
-        working-directory: frontend
+        working-directory: frontend-new
         run: pnpm install --frozen-lockfile
-      - name: Frontend typecheck and critical vitest
-        run: make test-frontend
+      - name: Frontend lint
+        working-directory: frontend-new
+        run: pnpm run lint
+      - name: Frontend typecheck
+        working-directory: frontend-new
+        run: pnpm run typecheck
+      - name: Frontend unit tests
+        working-directory: frontend-new
+        run: pnpm run test
+      - name: Frontend build
+        working-directory: frontend-new
+        run: pnpm run build
+      - name: Prepare embed dist for Go build
+        run: |
+          rm -rf backend/internal/web/dist
+          mkdir -p backend/internal/web/dist
+          cp -r frontend-new/dist/client/* backend/internal/web/dist/
+          cp backend/internal/web/dist/_shell.html backend/internal/web/dist/index.html
+      - name: Verify Go embed build
+        working-directory: backend
+        run: go build -tags embed -o /tmp/sub2api-verify ./cmd/server && echo "Go embed build OK"
 
   golangci-lint:
     runs-on: ubuntu-latest

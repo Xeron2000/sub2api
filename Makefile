@@ -1,19 +1,7 @@
 .PHONY: build build-backend build-frontend test test-backend test-frontend test-frontend-critical
 
-FRONTEND_CRITICAL_VITEST := \
-	src/api/__tests__/client.spec.ts \
-	src/api/__tests__/tokenRefresh.spec.ts \
-	src/api/__tests__/channelMonitorV2.spec.ts \
-	src/views/auth/__tests__/LinuxDoCallbackView.spec.ts \
-	src/views/auth/__tests__/WechatCallbackView.spec.ts \
-	src/views/user/__tests__/PaymentView.spec.ts \
-	src/views/user/__tests__/PaymentResultView.spec.ts \
-	src/views/user/__tests__/ChannelStatusView.mode.spec.ts \
-	src/components/user/profile/__tests__/ProfileInfoCard.spec.ts \
-	src/views/admin/__tests__/SettingsView.spec.ts \
-	src/features/channel-monitor-v2/__tests__/designSystem.structure.spec.ts \
-	src/features/channel-monitor-v2/__tests__/monitorFormat.spec.ts \
-	src/features/channel-monitor-v2/__tests__/monitorZoom.spec.ts
+# frontend-new: all vitest are critical (no legacy subset); keep variable for CI compatibility
+FRONTEND_CRITICAL_VITEST :=
 
 # 一键编译前后端
 build: build-backend build-frontend
@@ -22,8 +10,16 @@ build: build-backend build-frontend
 build-backend:
 	@$(MAKE) -C backend build
 
-# 编译前端（需要已安装依赖）
+# 编译前端（需要已安装依赖）— 默认 React (frontend-new)
 build-frontend:
+	@pnpm --dir frontend-new run build
+	@rm -rf backend/internal/web/dist
+	@mkdir -p backend/internal/web/dist
+	@cp -r frontend-new/dist/client/* backend/internal/web/dist/
+	@cp backend/internal/web/dist/_shell.html backend/internal/web/dist/index.html
+
+# legacy Vue 构建（rollback/reference）
+build-frontend-legacy:
 	@pnpm --dir frontend run build
 
 # 运行测试（后端 + 前端）
@@ -33,9 +29,9 @@ test-backend:
 	@$(MAKE) -C backend test
 
 test-frontend:
-	@pnpm --dir frontend run lint:check
-	@pnpm --dir frontend run typecheck
-	@$(MAKE) test-frontend-critical
+	@pnpm --dir frontend-new run lint
+	@pnpm --dir frontend-new run typecheck
+	@pnpm --dir frontend-new run test
 
 test-frontend-critical:
-	@pnpm --dir frontend exec vitest run $(FRONTEND_CRITICAL_VITEST)
+	@pnpm --dir frontend-new test

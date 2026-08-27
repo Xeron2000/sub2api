@@ -67,15 +67,23 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: frontend-new/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: frontend
+        working-directory: frontend-new
 
       - name: Build frontend
         run: pnpm run build
-        working-directory: frontend
+        working-directory: frontend-new
+
+      - name: Prepare embed dist
+        run: |
+          rm -rf backend/internal/web/dist
+          mkdir -p backend/internal/web/dist
+          cp -r frontend-new/dist/client/* backend/internal/web/dist/
+          cp backend/internal/web/dist/_shell.html backend/internal/web/dist/index.html
+          echo "Embed dist prepared:" && ls -lh backend/internal/web/dist/ | head -20
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v7

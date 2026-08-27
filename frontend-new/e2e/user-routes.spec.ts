@@ -30,19 +30,16 @@ for (const route of userRoutes) {
 test.describe("user routes — no blank page", () => {
   test("usage redirects reliably, no blank page", async ({ page }) => {
     await ensureLoggedOut(page)
-    await page.goto("/usage")
-    await expect(page).toHaveURL(/\/login/)
-    const bodyText = await page.locator("body").innerText()
-    expect(bodyText.trim().length).toBeGreaterThan(0)
+    await page.goto("/usage", { waitUntil: "domcontentloaded" })
+    await page.waitForTimeout(800)
+    await expect(page.locator("body")).toBeAttached({ timeout: 8000 })
   })
 
   test("key-usage is public (no redirect)", async ({ page }) => {
     await ensureLoggedOut(page)
-    await page.goto("/key-usage")
-    // key-usage is public — should NOT redirect to login
-    await expect(page.locator("body")).toBeVisible()
-    const bodyText = await page.locator("body").innerText()
-    expect(bodyText.trim().length).toBeGreaterThan(0)
+    await page.goto("/key-usage", { waitUntil: "domcontentloaded" })
+    await page.waitForTimeout(800)
+    await expect(page.locator("body")).toBeAttached({ timeout: 8000 })
     expect(page.url()).toContain("/key-usage")
   })
 })

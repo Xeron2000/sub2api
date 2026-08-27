@@ -648,13 +648,13 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		router := gin.New()
 		router.Use(server.Middleware())
 
-		// Request for existing static file
+		// Request for existing static file (favicon exists in both Vue and React builds)
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/logo.png", nil)
+		req := httptest.NewRequest(http.MethodGet, "/favicon.ico", nil)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
+		assert.Contains(t, strings.ToLower(w.Header().Get("Content-Type")), "image")
 		assert.Empty(t, w.Header().Get("Cache-Control"))
 
 		entries, err := fs.ReadDir(server.distFS, "assets")
@@ -715,7 +715,7 @@ func TestNewFrontendServer(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.NotEmpty(t, server.baseHTML)
-		assert.Contains(t, string(server.baseHTML), "<!doctype html>")
+		assert.Contains(t, strings.ToLower(string(server.baseHTML)), "<!doctype html>")
 	})
 }
 
@@ -735,11 +735,11 @@ func TestServeEmbeddedFrontend(t *testing.T) {
 		router.Use(middleware)
 
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/logo.png", nil)
+		req := httptest.NewRequest(http.MethodGet, "/favicon.ico", nil)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
+		assert.Contains(t, strings.ToLower(w.Header().Get("Content-Type")), "image")
 	})
 
 	t.Run("serves_index_html_for_root", func(t *testing.T) {
@@ -754,7 +754,7 @@ func TestServeEmbeddedFrontend(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
-		assert.Contains(t, w.Body.String(), "<!doctype html>")
+		assert.Contains(t, strings.ToLower(w.Body.String()), "<!doctype html>")
 	})
 
 	t.Run("serves_index_html_for_spa_routes", func(t *testing.T) {

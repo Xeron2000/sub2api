@@ -8,7 +8,7 @@ const config = defineConfig({
   // @ts-expect-error vitest types
   test: { environment: "jsdom", globals: true, exclude: ["e2e/**", "node_modules/**", "dist/**"] },
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+  plugins: [devtools(), tailwindcss(), tanstackStart({ spa: { enabled: true } }), viteReact()],
   server: {
     port: 18788,
     host: "0.0.0.0",
